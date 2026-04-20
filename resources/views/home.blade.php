@@ -1,5 +1,5 @@
-<h2>Trang Home</h2>
+@extends('layouts.app')
 
-<p>Xin chào: {{ session('user') }}</p>
-
-<a href="/logout">Logout</a>
+@section('content')
+    <h2>Trang chủ</h2>
+@endsection
