@@ -39,15 +39,32 @@
                     </div>
                     @endforeach
                 </div>
-                <nav class="pages">
-                    <ul>
-                        <li class="current-page"><span>1</span></li>
-                        <li><a href="./indexpage2.html">2</a></li>
-                        <li><a href="./indexpage3.html">3</a></li>
-                        <li><a href="./indexpage4.html">4</a></li>
-                        <li><a href="./indexpage2.html">Next</a></li>
-                    </ul>
-                </nav>
+@if ($posts->hasPages())
+    <nav class="pages">
+        <ul>
+
+            {{-- Prev --}}
+            @if (!$posts->onFirstPage())
+                <li><a href="{{ $posts->previousPageUrl() }}">Prev</a></li>
+            @endif
+
+            {{-- Số trang --}}
+            @for ($i = 1; $i <= $posts->lastPage(); $i++)
+                @if ($i == $posts->currentPage())
+                    <li class="current-page"><span>{{ $i }}</span></li>
+                @else
+                    <li><a href="{{ $posts->url($i) }}">{{ $i }}</a></li>
+                @endif
+            @endfor
+
+            {{-- Next --}}
+            @if ($posts->hasMorePages())
+                <li><a href="{{ $posts->nextPageUrl() }}">Next</a></li>
+            @endif
+
+        </ul>
+    </nav>
+@endif
                 <div class="banner">
                     <picture>
                         <source srcset="./img/banner.webp" type="image/webp">

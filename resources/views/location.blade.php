@@ -29,6 +29,32 @@
                     @endforeach
                 </div>
             </div>
+@if ($posts->hasPages())
+    <nav class="pages" style="padding-bottom: 30px;">
+        <ul>
+
+            {{-- Prev --}}
+            @if (!$posts->onFirstPage())
+                <li><a href="{{ $posts->previousPageUrl() }}">Prev</a></li>
+            @endif
+
+            {{-- Số trang --}}
+            @for ($i = 1; $i <= $posts->lastPage(); $i++)
+                @if ($i == $posts->currentPage())
+                    <li class="current-page"><span>{{ $i }}</span></li>
+                @else
+                    <li><a href="{{ $posts->url($i) }}">{{ $i }}</a></li>
+                @endif
+            @endfor
+
+            {{-- Next --}}
+            @if ($posts->hasMorePages())
+                <li><a href="{{ $posts->nextPageUrl() }}">Next</a></li>
+            @endif
+
+        </ul>
+    </nav>
+@endif
 </main>
 
 @endsection

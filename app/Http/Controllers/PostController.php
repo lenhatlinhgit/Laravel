@@ -124,7 +124,7 @@ class PostController extends Controller
 
     public function index()
     {
-        $posts = DB::table('posts')->orderBy('id', 'desc')->get();
+        $posts = DB::table('posts')->orderBy('id', 'desc')->paginate(4);
         return view('home', compact('posts'));
     }
     public function show($id)
@@ -135,7 +135,7 @@ class PostController extends Controller
 
 public function byLocation($location)
 {
-    $posts = Post::where('location', $location)->get();
+    $posts = Post::where('location', $location)->paginate(4);
 
     return view('location', compact('posts', 'location'));
 }
