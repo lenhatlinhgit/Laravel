@@ -1,10 +1,4 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Đăng ký</title>
-    <link rel="stylesheet" href="{{ asset('css/register.css') }}">
-    <style>
+
         body {
             margin: 0;
             font-family: 'DM Sans', sans-serif;
@@ -129,64 +123,3 @@
             -webkit-text-fill-color: #1f1717 !important;
             transition: background-color 9999s ease-in-out 0s;
         }
-    </style>
-</head>
-
-<body>
-
-<div class="container">
-
-    <div class="login-wrapper">
-
-        <!-- LOGO -->
-        <div class="login-logo">
-            <img src="http://127.0.0.1:8000/img/logo-300x51.webp" alt="logo">
-        </div>
-
-        <!-- FORM -->
-        <div class="Contact-item">
-
-            <div class="title">Đăng ký</div>
-
-            {{-- ALERT --}}
-            @if(session('success'))
-                <div class="alert success">{{ session('success') }}</div>
-            @endif
-
-            @if(session('error'))
-                <div class="alert error">{{ session('error') }}</div>
-            @endif
-
-            <form method="POST" action="/register">
-                @csrf
-
-                <div class="information">Họ tên</div>
-                <input type="text" name="name" class="input" required>
-
-                <div class="information">Tên đăng nhập</div>
-                <input type="text" name="username" class="input" required>
-
-                <div class="information">Email</div>
-                <input type="email" name="email" class="input" required>
-
-                <div class="information">Mật khẩu</div>
-                <input type="password" name="password" class="input" required>
-
-                <div class="information">Xác nhận mật khẩu</div>
-                <input type="password" name="password_confirmation" class="input" required>
-
-                <button class="btn">Đăng ký</button>
-            </form>
-
-            <div class="link">
-                <a href="/login">Đã có tài khoản? Đăng nhập</a>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-</body>
-</html>

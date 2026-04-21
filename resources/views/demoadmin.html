@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Posts</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'DM Sans', sans-serif;
+            background: #f1f1f1;
+        }
+
+        /* LAYOUT */
+        .dashboard {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR - tone tối nhưng không gắt */
+        .sidebar {
+            width: 240px;
+            background: #1f1717;
+            color: #fff;
+            padding: 20px;
+        }
+
+        .sidebar h2 {
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar a {
+            display: block;
+            color: #cfcfcf;
+            text-decoration: none;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+
+        .sidebar a:hover {
+            color: #fff;
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            padding: 24px 30px;
+        }
+
+        /* TOPBAR */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .topbar h1 {
+            font-size: 22px;
+            margin: 0;
+            color: #1f1717;
+        }
+
+        /* BUTTON (tone giống login/register) */
+        .btn {
+            padding: 10px 14px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 0;
+            background: #fff;
+            color: #1f1717;
+        }
+
+        .btn-primary {
+            background: #1f1717;
+            color: #fff;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-edit {
+            background: #f8f5ef;
+            color: #1f1717;
+        }
+
+        .btn-delete {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: #1f1717;
+        }
+
+        /* STATS (tone giấy cổ điển) */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 13px;
+            color: #777;
+            font-weight: 500;
+        }
+
+        .card p {
+            font-size: 22px;
+            margin: 8px 0 0;
+            color: #1f1717;
+        }
+
+        /* TABLE */
+        .table-box {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 14px;
+            color: #1f1717;
+        }
+
+        th {
+            background: #faf9f6;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        /* MODAL */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            width: 420px;
+            background: #fff;
+            padding: 22px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            background: #f8f5ef;
+            outline: none;
+        }
+
+        .input:focus {
+            background: #fffdf8;
+            border-color: #1f1717;
+        }
+
+        .close {
+            float: right;
+            cursor: pointer;
+            color: #1f1717;
+        }
+
+        /* TEXT CLEAN */
+        h1,
+        h2,
+        h3 {
+            font-family: 'DM Sans', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="dashboard">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <h2>Admin</h2>
+            <a href="#">Dashboard</a>
+            <a href="#">Posts</a>
+            <a href="#">Users</a>
+            <a href="#">Settings</a>
+        </div>
+
+        <!-- MAIN -->
+        <div class="main">
+
+            <div class="topbar">
+                <h1>Quản lý bài viết</h1>
+                <button class="btn btn-primary" onclick="openModal()">+ Thêm bài viết</button>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats">
+                <div class="card">
+                    <h3>Tổng bài viết</h3>
+                    <p>128</p>
+                </div>
+
+                <div class="card">
+                    <h3>Hôm nay</h3>
+                    <p>12</p>
+                </div>
+
+                <div class="card">
+                    <h3>Người dùng</h3>
+                    <p>54</p>
+                </div>
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-box">
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tiêu đề</th>
+                        <th>Tác giả</th>
+                        <th>Địa điểm</th>
+                        <th>Hành động</th>
+                    </tr>
+
+                    <tr>
+                        <td>1</td>
+                        <td>Bài viết demo</td>
+                        <td>Anh A</td>
+                        <td>Hà Nội</td>
+                        <td>
+                            <button class="btn btn-edit">Sửa</button>
+                            <button class="btn btn-delete">Xóa</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+
+            <span class="close" onclick="closeModal()">✖</span>
+
+            <h3>Thêm bài viết</h3>
+
+            <input class="input" placeholder="Tiêu đề">
+            <input class="input" placeholder="Địa điểm">
+            <input class="input" placeholder="Tác giả">
+
+            <button class="btn btn-primary">Lưu</button>
+
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+    </script>
+
+</body>
+
+</html>

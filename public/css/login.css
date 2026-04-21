@@ -1,11 +1,4 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Đăng ký</title>
-    <link rel="stylesheet" href="{{ asset('css/register.css') }}">
-    <style>
-        body {
+body {
             margin: 0;
             font-family: 'DM Sans', sans-serif;
             background: #f1f1f1;
@@ -17,6 +10,7 @@
             padding: 40px 16px;
         }
 
+        /* CENTER */
         .login-wrapper {
             display: flex;
             justify-content: center;
@@ -26,6 +20,7 @@
             gap: 8px;
         }
 
+        /* LOGO */
         .login-logo {
             margin-bottom: 60px;
         }
@@ -34,6 +29,7 @@
             width: 250px;
         }
 
+        /* FORM CARD */
         .Contact-item {
             width: 100%;
             max-width: 460px;
@@ -43,6 +39,7 @@
             box-sizing: border-box;
         }
 
+        /* TITLE */
         .title {
             font-size: 24px;
             font-family: Marcellus, serif;
@@ -51,6 +48,7 @@
             color: #1f1717;
         }
 
+        /* LABEL */
         .information {
             font-weight: 600;
             font-size: 14px;
@@ -58,6 +56,7 @@
             color: #1f1717;
         }
 
+        /* INPUT */
         .input {
             width: 100%;
             padding: 12px 14px;
@@ -65,7 +64,9 @@
             outline: none;
             font-size: 14px;
             box-sizing: border-box;
-            background: #f8f5ef;
+
+            /* giấy cổ điển */
+            background: #f8f5ef ;
         }
 
         .input:focus {
@@ -73,6 +74,7 @@
             background: #fffdf8;
         }
 
+        /* BUTTON */
         .btn {
             width: 100%;
             margin-top: 22px;
@@ -89,6 +91,7 @@
             opacity: 0.9;
         }
 
+        /* LINK */
         .link {
             text-align: center;
             margin-top: 16px;
@@ -104,6 +107,7 @@
             text-decoration: underline;
         }
 
+        /* ALERT */
         .alert {
             padding: 10px;
             margin-bottom: 12px;
@@ -120,73 +124,11 @@
             background: #ffe6e6;
             color: #a12b2b;
         }
-
         input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus,
-        input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px #faf9f6 inset !important;
-            -webkit-text-fill-color: #1f1717 !important;
-            transition: background-color 9999s ease-in-out 0s;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="container">
-
-    <div class="login-wrapper">
-
-        <!-- LOGO -->
-        <div class="login-logo">
-            <img src="http://127.0.0.1:8000/img/logo-300x51.webp" alt="logo">
-        </div>
-
-        <!-- FORM -->
-        <div class="Contact-item">
-
-            <div class="title">Đăng ký</div>
-
-            {{-- ALERT --}}
-            @if(session('success'))
-                <div class="alert success">{{ session('success') }}</div>
-            @endif
-
-            @if(session('error'))
-                <div class="alert error">{{ session('error') }}</div>
-            @endif
-
-            <form method="POST" action="/register">
-                @csrf
-
-                <div class="information">Họ tên</div>
-                <input type="text" name="name" class="input" required>
-
-                <div class="information">Tên đăng nhập</div>
-                <input type="text" name="username" class="input" required>
-
-                <div class="information">Email</div>
-                <input type="email" name="email" class="input" required>
-
-                <div class="information">Mật khẩu</div>
-                <input type="password" name="password" class="input" required>
-
-                <div class="information">Xác nhận mật khẩu</div>
-                <input type="password" name="password_confirmation" class="input" required>
-
-                <button class="btn">Đăng ký</button>
-            </form>
-
-            <div class="link">
-                <a href="/login">Đã có tài khoản? Đăng nhập</a>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-</body>
-</html>
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #faf9f6 inset !important;
+    -webkit-text-fill-color: #1f1717 !important;
+    transition: background-color 9999s ease-in-out 0s;
+}
