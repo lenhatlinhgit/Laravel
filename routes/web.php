@@ -1,15 +1,30 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PostController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+/*
+|--------------------------------------------------------------------------
+| Trang chính (HOME FEED)
+|--------------------------------------------------------------------------
+*/
+Route::get('/', [PostController::class, 'index']);
+
+/*
+|--------------------------------------------------------------------------
+| TEST
+|--------------------------------------------------------------------------
+*/
 Route::get('/linh', function () {
     return view('linh');
 });
-use App\Http\Controllers\AuthController;
 
+/*
+|--------------------------------------------------------------------------
+| AUTH
+|--------------------------------------------------------------------------
+*/
 Route::get('/register', [AuthController::class, 'showRegister']);
 Route::post('/register', [AuthController::class, 'register']);
 
@@ -18,18 +33,30 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::get('/logout', [AuthController::class, 'logout']);
 
-Route::get('/home', function () {
-    if (!session('user')) {
-        return redirect('/login');
-    }
-    return view('home');
-});
+/*
+|--------------------------------------------------------------------------
+| HOME (user + admin) - FIXED
+| 👉 QUAN TRỌNG: phải truyền $posts vào view
+|--------------------------------------------------------------------------
+*/
+Route::get('/home', [PostController::class, 'index'])
+    ->middleware('checkrole:user,admin');
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN
+|--------------------------------------------------------------------------
+*/
 Route::get('/admin', function () {
-
-    if (!session('user') || session('role') !== 'admin') {
-        return redirect('/login');
-    }
-
     return view('admin');
-});
+})->middleware('checkrole:admin');
+
+/*
+|--------------------------------------------------------------------------
+| UPLOAD (admin only)
+|--------------------------------------------------------------------------
+*/
+Route::post('/upload', [PostController::class, 'upload'])
+    ->middleware('checkrole:admin');
+
+Route::get('/post/{id}', [PostController::class, 'show']);

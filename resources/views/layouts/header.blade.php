@@ -3,8 +3,7 @@
                 <div class="header__right">
                     <div class="header__logo"><a href="./index.html">
                             <picture>
-                                <source srcset="./img/logo-300x51.webp" type="image/webp">
-                                <img src="./img/logo-300x51.png" loading="lazy" alt="logo" />
+                                <img src="http://127.0.0.1:8000/img/logo-300x51.webp" loading="lazy" alt="logo" />
                             </picture>
                         </a></div>
                     <div class="header__slogan">
