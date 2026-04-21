@@ -60,3 +60,5 @@ Route::post('/upload', [PostController::class, 'upload'])
     ->middleware('checkrole:admin');
 
 Route::get('/post/{id}', [PostController::class, 'show']);
+
+Route::get('/location/{location}', [PostController::class, 'byLocation']);

@@ -7,7 +7,7 @@
                     loading="lazy" />
             </picture>
             <div class="main-container">
-                <div class="location"><a href="./Europe.html">{{ $post->location }}</a></div>
+                <div class="location"><a href="{{ url('/location/' . $post->location) }}">{{ $post->location }}</a></div>
                 <div class="main-titlepost">{{ $post->title }}</div>
                 <div class="main-time">
                     <p>{{ $post->author }}</p>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Post;
 use ZipArchive;
 
 class PostController extends Controller
@@ -130,5 +131,12 @@ class PostController extends Controller
 {
     $post = DB::table('posts')->where('id', $id)->first();
     return view('post', compact('post'));
+}
+
+public function byLocation($location)
+{
+    $posts = Post::where('location', $location)->get();
+
+    return view('location', compact('posts', 'location'));
 }
 }
