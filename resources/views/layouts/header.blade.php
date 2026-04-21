@@ -1,13 +1,13 @@
 <header>
             <div class="header">
                 <div class="header__right">
-                    <div class="header__logo"><a href="./index.html">
+                    <div class="header__logo"><a href="/home">
                             <picture>
                                 <img src="http://127.0.0.1:8000/img/logo-300x51.webp" loading="lazy" alt="logo" />
                             </picture>
                         </a></div>
                     <div class="header__slogan">
-                        <h1><a href="./index.html">eStory Journey</a></h1>
+                        <h1><a href="/home">eStory Journey</a></h1>
                         <p class="slogan">A Full Site Editing Gutenberg WordPress Theme</p>
                     </div>
                 </div>
@@ -24,7 +24,7 @@
                                     d="m13.06 12 6.47-6.47-1.06-1.06L12 10.94 5.53 4.47 4.47 5.53 10.94 12l-6.47 6.47 1.06 1.06L12 13.06l6.47 6.47 1.06-1.06L13.06 12Z">
                                 </path>
                             </svg></span>
-                        <li class="dropdown" id="nav-homme"><a href="./index.html">Home</a></li>
+                        <li class="dropdown" id="nav-homme"><a href="/home">Home</a></li>
                         <li class="dropdown">
                             <div class="dropdown-btn"><span>Posts</span><svg width="12" height="6" viewBox="0 0 4 2"
                                     xmlns="http://www.w3.org/2000/svg">
@@ -35,9 +35,9 @@
                                 </svg>
                             </div>
                             <ul class="dropdown-menu">
-                                <li><a href="./Santorini.html" class="content-dropdown">Single Post</a></li>
+                                <li><a href="/post/12" class="content-dropdown">Single Post</a></li>
                                 <hr />
-                                <li><a href="./Asia.html" class="content-dropdown">Archive</a></li>
+                                <li><a href="/location/Asia" class="content-dropdown">Archive</a></li>
                             </ul>
                         </li>
                         <li class="dropdown">
@@ -50,9 +50,9 @@
                                 </svg>
                             </div>
                             <ul class="dropdown-menu">
-                                <li><a href="./Aboutme.html" class="content-dropdown">About me</a></li>
+                                <li><a href="/aboutme" class="content-dropdown">About me</a></li>
                                 <hr />
-                                <li><a href="./Contact.html" class="content-dropdown">Contact</a></li>
+                                <li><a href="/contact" class="content-dropdown">Contact</a></li>
                             </ul>
                         </li>
                         <li>

@@ -16,8 +16,12 @@ Route::get('/', [PostController::class, 'index']);
 | TEST
 |--------------------------------------------------------------------------
 */
-Route::get('/linh', function () {
-    return view('linh');
+Route::get('/aboutme', function () {
+    return view('aboutme');
+});
+
+Route::get('/contact', function () {
+    return view('contact');
 });
 
 /*
