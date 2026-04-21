@@ -15,12 +15,11 @@ class PostController extends Controller
 
     public function upload(Request $request)
 {
-    // ✅ validate
+    // ✅ validate (đã bỏ dateposted)
     $request->validate([
         'title' => 'required',
         'location' => 'required',
         'author' => 'required',
-        'dateposted' => 'required',
         'zipfile' => 'required|file',
         'background' => 'required|image',
     ]);
@@ -59,15 +58,13 @@ class PostController extends Controller
 
     // 📂 lấy đường dẫn folder chứa index.html
     $relativePath = str_replace(public_path(), '', dirname($htmlFile));
-
-    // 🔥 FIX QUAN TRỌNG: đổi \ → /
     $relativePath = str_replace('\\', '/', $relativePath);
 
     // 🔥 chuẩn hóa content
     $content = str_replace('\\', '/', $content);
     $content = str_replace('./', '', $content);
 
-    // 🔥 nối đúng đường dẫn ảnh
+    // 🔥 fix src (ảnh)
     $content = str_replace(
         'src="images/',
         'src="' . $relativePath . '/images/',
@@ -77,6 +74,19 @@ class PostController extends Controller
     $content = str_replace(
         'src="./images/',
         'src="' . $relativePath . '/images/',
+        $content
+    );
+
+    // 🔥 fix srcset (picture)
+    $content = str_replace(
+        'srcset="images/',
+        'srcset="' . $relativePath . '/images/',
+        $content
+    );
+
+    $content = str_replace(
+        'srcset="./images/',
+        'srcset="' . $relativePath . '/images/',
         $content
     );
 
@@ -97,7 +107,10 @@ class PostController extends Controller
         'title' => $request->title,
         'location' => $request->location,
         'author' => $request->author,
-        'dateposted' => $request->dateposted,
+
+        // 🔥 luôn lấy thời gian hiện tại
+        'dateposted' => now(),
+
         'content' => $content,
         'background' => $bgPath,
         'created_at' => now(),
