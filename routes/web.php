@@ -6,23 +6,18 @@ use App\Http\Controllers\PostController;
 
 /*
 |--------------------------------------------------------------------------
-| Trang chính (HOME FEED)
+| HOME
 |--------------------------------------------------------------------------
 */
 Route::get('/', [PostController::class, 'index']);
 
 /*
 |--------------------------------------------------------------------------
-| TEST
+| STATIC PAGES
 |--------------------------------------------------------------------------
 */
-Route::get('/aboutme', function () {
-    return view('aboutme');
-});
-
-Route::get('/contact', function () {
-    return view('contact');
-});
+Route::view('/aboutme', 'aboutme');
+Route::view('/contact', 'contact');
 
 /*
 |--------------------------------------------------------------------------
@@ -39,8 +34,7 @@ Route::get('/logout', [AuthController::class, 'logout']);
 
 /*
 |--------------------------------------------------------------------------
-| HOME (user + admin) - FIXED
-| 👉 QUAN TRỌNG: phải truyền $posts vào view
+| USER + ADMIN HOME
 |--------------------------------------------------------------------------
 */
 Route::get('/home', [PostController::class, 'index'])
@@ -51,18 +45,31 @@ Route::get('/home', [PostController::class, 'index'])
 | ADMIN
 |--------------------------------------------------------------------------
 */
-Route::get('/admin', function () {
-    return view('admin');
+
+// Dashboard
+Route::get('/admin', [PostController::class, 'admin'])
+    ->middleware('checkrole:admin');
+
+// Trang tạo bài viết
+Route::get('/createpost', function () {
+    return view('createpost');
 })->middleware('checkrole:admin');
 
 /*
 |--------------------------------------------------------------------------
-| UPLOAD (admin only)
+| UPLOAD
 |--------------------------------------------------------------------------
 */
-Route::post('/upload', [PostController::class, 'upload'])
+/*
+|--------------------------------------------------------------------------
+| POST DETAIL
+|--------------------------------------------------------------------------
+*/
+Route::get('/post/{id}', [PostController::class, 'show']);
+Route::get('/location/{location}', [PostController::class, 'byLocation']);
+
+Route::get('/createpost', [PostController::class, 'createPost'])
     ->middleware('checkrole:admin');
 
-Route::get('/post/{id}', [PostController::class, 'show']);
-
-Route::get('/location/{location}', [PostController::class, 'byLocation']);
+Route::post('/upload', [PostController::class, 'upload'])
+    ->middleware('checkrole:admin');

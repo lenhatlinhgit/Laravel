@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Post;
+use App\Models\User;
 use ZipArchive;
 
 class PostController extends Controller
@@ -124,12 +125,16 @@ class PostController extends Controller
 
     public function index()
     {
-        $posts = DB::table('posts')->orderBy('id', 'desc')->paginate(4);
+        $posts = DB::table('posts')->orderBy('views', 'desc')->paginate(4);
         return view('home', compact('posts'));
     }
     public function show($id)
 {
-    $post = DB::table('posts')->where('id', $id)->first();
+    $post = Post::findOrFail($id);
+
+    // 🔥 tăng view mỗi lần reload / truy cập
+    $post->increment('views');
+
     return view('post', compact('post'));
 }
 
@@ -138,5 +143,31 @@ public function byLocation($location)
     $posts = Post::where('location', $location)->paginate(4);
 
     return view('location', compact('posts', 'location'));
+}
+public function admin()
+{
+    $data = $this->getDashboardStats();
+    $data['posts'] = $this->getPosts();
+
+    return view('admin', $data);
+}
+public function createPost()
+{
+    $data = $this->getDashboardStats();
+    return view('createpost', $data);
+}
+private function getDashboardStats()
+{
+    return [
+        'totalPosts' => Post::count(),
+        'todayPosts' => Post::whereDate('created_at', today())->count(),
+        'totalViews' => Post::sum('views'),
+        'totalUsers' => User::where('role', 'user')->count(),
+    ];
+}
+
+private function getPosts()
+{
+    return Post::latest()->get();
 }
 }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard Demo</title>
+    <title>Admin Dashboard</title>
 
     <style>
         body {
@@ -31,15 +31,18 @@
             margin-bottom: 25px;
         }
 
-        .sidebar a {
-            display: block;
+        /* MENU ITEM */
+        .menu {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
             color: #cfcfcf;
             text-decoration: none;
-            padding: 10px 0;
             font-size: 14px;
         }
 
-        .sidebar a:hover {
+        .menu:hover {
             color: #fff;
         }
 
@@ -61,22 +64,14 @@
             margin: 0;
             font-size: 22px;
             color: #1f1717;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         /* BUTTON */
-        .btn {
-            padding: 10px 14px;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-        }
 
-        .btn-primary {
-            background: #1f1717;
-            color: #fff;
-        }
-
-        /* CARDS STATS */
+        /* STATS */
         .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -94,6 +89,9 @@
             margin: 0;
             font-size: 13px;
             color: #777;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .card p {
@@ -125,14 +123,6 @@
             text-align: left;
         }
 
-        /* STATUS */
-        .status {
-            padding: 4px 8px;
-            font-size: 12px;
-            background: #f8f5ef;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
         /* ACTION */
         .action button {
             margin-right: 5px;
@@ -150,6 +140,26 @@
             background: #fff;
             border: 1px solid rgba(0, 0, 0, 0.2);
         }
+
+        /* ICON FIX EMOJI */
+        .icon {
+            font-size: 16px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            top: 1px;
+            /* 👈 FIX LỆCH CHUẨN */
+        }
+
+        .menu span {
+            padding-bottom: 5px;
+        }
+
+        .topbar span {
+            padding-bottom: 4px;
+        }
     </style>
 </head>
 
@@ -159,21 +169,19 @@
 
         <!-- SIDEBAR -->
         <div class="sidebar">
-            <h2>Admin Panel</h2>
-            <a href="#">📊 Dashboard</a>
-            <a href="#">📝 Posts</a>
-            <a href="#">🧑 Users</a>
-            <a href="#">⚙️ Settings</a>
-            <a href="#">🚪 Logout</a>
+            <h2>Admin</h2>
+
+            <a class="menu" href="#"><span class="icon">📊</span> Dashboard</a>
+            <a class="menu" href="#"><span class="icon">📝</span> Posts</a>
+            <a class="menu" href="#"><span class="icon">🔑</span> Change Password</a>
+            <a class="menu" href="#"><span class="icon">🚪</span> Logout</a>
         </div>
 
         <!-- MAIN -->
         <div class="main">
 
-            <!-- TOP -->
             <div class="topbar">
-                <h1>Dashboard</h1>
-                <button class="btn btn-primary">+ New Post</button>
+                <h1><span class="icon">📊</span> Dashboard</h1>
             </div>
 
             <!-- STATS -->
@@ -203,43 +211,28 @@
 
             <!-- TABLE -->
             <div class="table">
-
                 <table>
                     <tr>
                         <th>ID</th>
-                        <th>Title</th>
+                        <th>Post</th>
                         <th>Author</th>
-                        <th>Status</th>
+                        <th>Views</th>
                         <th>Date</th>
                         <th>Action</th>
                     </tr>
 
                     <tr>
                         <td>1</td>
-                        <td>How to learn Laravel</td>
+                        <td>Learn Laravel</td>
                         <td>Admin</td>
-                        <td><span class="status">Published</span></td>
+                        <td>1200</td>
                         <td>21/04/2026</td>
                         <td class="action">
                             <button class="edit">Edit</button>
                             <button class="delete">Delete</button>
                         </td>
                     </tr>
-
-                    <tr>
-                        <td>2</td>
-                        <td>UI Design Tips</td>
-                        <td>Admin</td>
-                        <td><span class="status">Draft</span></td>
-                        <td>20/04/2026</td>
-                        <td class="action">
-                            <button class="edit">Edit</button>
-                            <button class="delete">Delete</button>
-                        </td>
-                    </tr>
-
                 </table>
-
             </div>
 
         </div>
