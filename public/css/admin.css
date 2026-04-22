@@ -1,0 +1,97 @@
+body {
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    background: #f1f1f1;
+    overflow: hidden;
+}
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 240px;
+    height: 100vh;
+    background: #1f1717;
+    color: #fff;
+    padding: 20px;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.sidebar h2 {
+    font-size: 18px;
+    margin-bottom: 25px;
+}
+
+.menu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    color: #cfcfcf;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.menu:hover {
+    color: #fff;
+}
+
+.main {
+    margin-left: 280px;
+    padding: 25px;
+    height: 100vh;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.topbar h1 {
+    margin: 0;
+    font-size: 22px;
+    color: #1f1717;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.card {
+    background: #fff;
+    padding: 18px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 13px;
+    color: #777;
+}
+
+.card p {
+    font-size: 20px;
+    margin-top: 8px;
+    color: #1f1717;
+}
+
+.icon {
+    font-size: 16px;
+}

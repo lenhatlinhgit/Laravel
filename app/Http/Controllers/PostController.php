@@ -146,15 +146,12 @@ public function byLocation($location)
 }
 public function admin()
 {
-    $data = $this->getDashboardStats();
     $data['posts'] = $this->getPosts();
-
     return view('admin', $data);
 }
 public function createPost()
 {
-    $data = $this->getDashboardStats();
-    return view('createpost', $data);
+    return view('createpost');
 }
 private function getDashboardStats()
 {
@@ -169,5 +166,31 @@ private function getDashboardStats()
 private function getPosts()
 {
     return Post::latest()->get();
+}
+public function edit($id)
+{
+    $post = Post::findOrFail($id);
+    return view('editpost', compact('post'));
+}
+
+public function update(Request $request, $id)
+{
+    DB::table('posts')->where('id', $id)->update([
+        'title' => $request->title,
+        'location' => $request->location,
+        'author' => $request->author,
+        'updated_at' => now(),
+    ]);
+
+    return redirect('/admin')->with('success', 'Update thành công');
+}
+public function destroy($id)
+{
+    $post = Post::findOrFail($id);
+
+    // nếu có file ZIP / background thì có thể xóa thêm (tuỳ bạn)
+    DB::table('posts')->where('id', $id)->delete();
+
+    return redirect('/admin')->with('success', 'Xóa bài viết thành công!');
 }
 }

@@ -1,0 +1,40 @@
+.table {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.05);
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 50px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+th {
+    background: #faf9f6;
+    text-align: left;
+}
+
+.action button {
+    margin-right: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.edit {
+    background: #f8f5ef;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.delete {
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.2);
+}

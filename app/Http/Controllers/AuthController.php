@@ -77,4 +77,44 @@ class AuthController extends Controller
     session()->flush();
     return redirect('/login');
 }
+public function showChangePassword()
+{
+    return view('changepassword');
+}
+
+public function changePassword(Request $request)
+{
+    $request->validate([
+        'current_password' => 'required',
+        'new_password' => 'required|min:6|confirmed',
+    ]);
+
+    // lấy user từ session (vì bạn không dùng Auth)
+    $username = session('user');
+
+    if (!$username) {
+        return redirect('/login');
+    }
+
+    $user = DB::table('users')
+        ->where('username', $username)
+        ->first();
+
+    // check mật khẩu cũ
+    if (!$user || !Hash::check($request->current_password, $user->password)) {
+        return back()->withErrors([
+            'current_password' => 'Mật khẩu hiện tại không đúng'
+        ]);
+    }
+
+    // update mật khẩu mới
+    DB::table('users')
+        ->where('username', $username)
+        ->update([
+            'password' => Hash::make($request->new_password),
+            'updated_at' => now()
+        ]);
+
+    return back()->with('success', 'Đổi mật khẩu thành công');
+}
 }

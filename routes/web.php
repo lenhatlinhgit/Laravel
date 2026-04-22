@@ -34,7 +34,7 @@ Route::get('/logout', [AuthController::class, 'logout']);
 
 /*
 |--------------------------------------------------------------------------
-| USER + ADMIN HOME
+| USER HOME
 |--------------------------------------------------------------------------
 */
 Route::get('/home', [PostController::class, 'index'])
@@ -42,7 +42,7 @@ Route::get('/home', [PostController::class, 'index'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN
+| ADMIN AREA
 |--------------------------------------------------------------------------
 */
 
@@ -50,16 +50,21 @@ Route::get('/home', [PostController::class, 'index'])
 Route::get('/admin', [PostController::class, 'admin'])
     ->middleware('checkrole:admin');
 
-// Trang tạo bài viết
-Route::get('/createpost', function () {
-    return view('createpost');
-})->middleware('checkrole:admin');
+// Create post page
+Route::get('/createpost', [PostController::class, 'createPost'])
+    ->middleware('checkrole:admin');
 
-/*
-|--------------------------------------------------------------------------
-| UPLOAD
-|--------------------------------------------------------------------------
-*/
+// Upload post
+Route::post('/upload', [PostController::class, 'upload'])
+    ->middleware('checkrole:admin');
+
+// Change password page
+Route::get('/changepassword', [AuthController::class, 'showChangePassword'])
+    ->middleware('checkrole:admin');
+
+Route::post('/changepassword', [AuthController::class, 'changePassword'])
+    ->middleware('checkrole:admin');
+
 /*
 |--------------------------------------------------------------------------
 | POST DETAIL
@@ -68,8 +73,7 @@ Route::get('/createpost', function () {
 Route::get('/post/{id}', [PostController::class, 'show']);
 Route::get('/location/{location}', [PostController::class, 'byLocation']);
 
-Route::get('/createpost', [PostController::class, 'createPost'])
-    ->middleware('checkrole:admin');
+Route::get('/post/{id}/edit', [PostController::class, 'edit']);
+Route::post('/post/{id}/update', [PostController::class, 'update']);
 
-Route::post('/upload', [PostController::class, 'upload'])
-    ->middleware('checkrole:admin');
+Route::delete('/post/{id}/delete', [PostController::class, 'destroy']);
