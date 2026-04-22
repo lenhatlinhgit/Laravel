@@ -5,7 +5,6 @@
 <title>Create Post</title>
 
 <style>
-/* GIỮ NGUYÊN CSS */
 body {
     margin: 0;
     font-family: 'DM Sans', sans-serif;
@@ -66,7 +65,6 @@ body {
     gap: 8px;
 }
 
-/* STATS */
 .stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -93,15 +91,15 @@ body {
     color: #1f1717;
 }
 
-/* FORM (thay table) */
+/* FORM */
 .form-box {
     background: #fff;
     border: 1px solid rgba(0,0,0,0.05);
     padding: 20px;
-
     flex: 1;
     overflow-y: auto;
 }
+
 .form-box input {
     width: calc(100% - 20px);
     padding: 10px;
@@ -145,34 +143,41 @@ body {
 
 .icon {
     font-size: 16px;
-    position: relative;
-    top: 1px;
 }
-.form-box input[type="file"] {
-    width: 100%;
-    padding: 8px;
+
+/* ===== FILE INPUT CUSTOM ===== */
+.file-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     background: #faf9f6;
     border: 1px solid #ddd;
+    padding: 8px;
+    margin-bottom: 12px;
+}
 
-    display: flex;
-    justify-content: space-between; /* 👈 đẩy 2 bên */
-    align-items: center;
+.file-name {
+    font-size: 13px;
+    color: #555;
 }
 
 /* nút chọn file */
-.form-box input[type="file"]::file-selector-button {
+.file-btn {
     background: #1f1717;
     color: #fff;
-    border: none;
     padding: 8px 14px;
+    font-size: 13px;
     cursor: pointer;
-
-    margin-left: auto; /* 👈 đẩy nút sang phải */
+    border: none;
 }
 
-/* hover */
-.form-box input[type="file"]::file-selector-button:hover {
+.file-btn:hover {
     opacity: 0.85;
+}
+
+/* ẩn input file gốc */
+.file-wrapper input[type="file"] {
+    display: none;
 }
 </style>
 </head>
@@ -226,7 +231,6 @@ body {
         <!-- FORM -->
         <div class="form-box">
 
-            {{-- lỗi --}}
             @if ($errors->any())
                 <div class="alert-error">
                     @foreach ($errors->all() as $error)
@@ -235,7 +239,6 @@ body {
                 </div>
             @endif
 
-            {{-- success --}}
             @if(session('success'))
                 <div class="alert-success">
                     {{ session('success') }}
@@ -246,16 +249,28 @@ body {
                 @csrf
 
                 <input type="text" name="title" placeholder="Title" value="{{ old('title') }}">
-
                 <input type="text" name="location" placeholder="Location" value="{{ old('location') }}">
-
                 <input type="text" name="author" placeholder="Author" value="{{ old('author') }}">
 
+                <!-- ZIP -->
                 <label>ZIP file:</label>
-                <input type="file" name="zipfile">
+                <div class="file-wrapper">
+                    <span class="file-name" id="zipName">Chưa chọn file</span>
+                    <label class="file-btn">
+                        Chọn file
+                        <input type="file" name="zipfile" onchange="zipName.textContent=this.files[0]?.name">
+                    </label>
+                </div>
 
+                <!-- Background -->
                 <label>Background image:</label>
-                <input type="file" name="background">
+                <div class="file-wrapper">
+                    <span class="file-name" id="bgName">Chưa chọn file</span>
+                    <label class="file-btn">
+                        Chọn file
+                        <input type="file" name="background" onchange="bgName.textContent=this.files[0]?.name">
+                    </label>
+                </div>
 
                 <button type="submit">Upload</button>
             </form>
