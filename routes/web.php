@@ -77,3 +77,7 @@ Route::get('/post/{id}/edit', [PostController::class, 'edit']);
 Route::post('/post/{id}/update', [PostController::class, 'update']);
 
 Route::delete('/post/{id}/delete', [PostController::class, 'destroy']);
+
+// Upload ảnh từ TinyMCE editor
+Route::post('/editor/image', [PostController::class, 'uploadImage'])
+    ->middleware('checkrole:admin');

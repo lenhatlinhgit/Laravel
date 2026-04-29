@@ -3,7 +3,6 @@
 @section('title', 'Create Post')
 @section('page-title', 'Create Post')
 
-{{-- CSS riêng cho trang này --}}
 @section('css')
 <link rel="stylesheet" href="{{ asset('css/create.css') }}">
 @endsection
@@ -32,31 +31,57 @@
         <input type="text" name="location" placeholder="Location" value="{{ old('location') }}">
         <input type="text" name="author" placeholder="Author" value="{{ old('author') }}">
 
-        <!-- ZIP -->
-        <label>ZIP file:</label>
-        <div class="file-wrapper">
-            <span class="file-name" id="zipName">Chưa chọn file</span>
-            <label class="file-btn">
-                Chọn file
-                <input type="file" name="zipfile"
-                onchange="zipName.textContent=this.files[0]?.name">
-            </label>
-        </div>
+        {{-- TinyMCE Editor --}}
+        <label>Nội dung bài viết:</label>
+        <textarea name="content" id="editor">{{ old('content') }}</textarea>
 
-        <!-- Background -->
+        {{-- Background --}}
         <label>Background image:</label>
         <div class="file-wrapper">
             <span class="file-name" id="bgName">Chưa chọn file</span>
             <label class="file-btn">
                 Chọn file
                 <input type="file" name="background"
-                onchange="bgName.textContent=this.files[0]?.name">
+                    onchange="bgName.textContent=this.files[0]?.name">
             </label>
         </div>
 
-        <button type="submit">Upload</button>
+        <button type="submit">Đăng bài</button>
     </form>
-
 </div>
+@endsection
 
+@section('script')
+<script src="/build/vendor/node_modules/tinymce/tinymce.min.js"></script>
+<script>
+tinymce.init({
+    selector: '#editor',
+    height: 500,
+    promotion: false,
+    plugins: 'image link lists table code fullscreen preview wordcount',
+    toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | table | code fullscreen',
+    images_upload_url: '/editor/image',
+    images_upload_credentials: true,
+    setup: function(editor) {
+        editor.on('change', function() {
+            editor.save();
+        });
+    },
+    images_upload_handler: function(blobInfo, progress) {
+        return new Promise(function(resolve, reject) {
+            const formData = new FormData();
+            formData.append('file', blobInfo.blob(), blobInfo.filename());
+            formData.append('_token', '{{ csrf_token() }}');
+
+            fetch('/editor/image', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(r => r.json())
+            .then(data => resolve(data.location))
+            .catch(() => reject('Upload ảnh thất bại'));
+        });
+    }
+});
+</script>
 @endsection

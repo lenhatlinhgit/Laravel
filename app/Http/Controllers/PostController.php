@@ -17,111 +17,89 @@ class PostController extends Controller
 
     public function upload(Request $request)
 {
-    // ✅ validate (đã bỏ dateposted)
     $request->validate([
-        'title' => 'required',
-        'location' => 'required',
-        'author' => 'required',
-        'zipfile' => 'required|file',
-        'background' => 'required|image',
+        'title'      => 'required|string|max:255',
+        'location'   => 'required|string|max:255',
+        'author'     => 'required|string|max:255',
+        'content'    => 'required|string',
+        'background' => 'required|image|max:4096',
     ]);
 
-    // 📁 tạo folder uploads
-    $time = time();
-    $baseFolder = public_path('uploads/' . $time);
-    mkdir($baseFolder, 0777, true);
+    // Upload background
+    $bg = $request->file('background');
+    $bgName = time() . '_' . $bg->getClientOriginalName();
+    $bg->move(public_path('uploads/backgrounds'), $bgName);
+    $bgPath = '/uploads/backgrounds/' . $bgName;
 
-    // 📦 giải nén ZIP
-    $zip = new ZipArchive;
+    // Sanitize content (loại bỏ script độc hại)
+    $content = clean($request->content);
 
-    if ($zip->open($request->file('zipfile')->getRealPath()) !== TRUE) {
-        return "Không mở được file ZIP";
-    }
-
-    $zip->extractTo($baseFolder);
-    $zip->close();
-
-    // 🔍 tìm index.html
-    $htmlFile = null;
-
-    foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($baseFolder)) as $file) {
-        if ($file->getFilename() === 'index.html') {
-            $htmlFile = $file->getPathname();
-            break;
-        }
-    }
-
-    if (!$htmlFile) {
-        return "Không tìm thấy index.html";
-    }
-
-    // 📄 đọc nội dung HTML
-    $content = file_get_contents($htmlFile);
-
-    // 📂 lấy đường dẫn folder chứa index.html
-    $relativePath = str_replace(public_path(), '', dirname($htmlFile));
-    $relativePath = str_replace('\\', '/', $relativePath);
-
-    // 🔥 chuẩn hóa content
-    $content = str_replace('\\', '/', $content);
-    $content = str_replace('./', '', $content);
-
-    // 🔥 fix src (ảnh)
-    $content = str_replace(
-        'src="images/',
-        'src="' . $relativePath . '/images/',
-        $content
-    );
-
-    $content = str_replace(
-        'src="./images/',
-        'src="' . $relativePath . '/images/',
-        $content
-    );
-
-    // 🔥 fix srcset (picture)
-    $content = str_replace(
-        'srcset="images/',
-        'srcset="' . $relativePath . '/images/',
-        $content
-    );
-
-    $content = str_replace(
-        'srcset="./images/',
-        'srcset="' . $relativePath . '/images/',
-        $content
-    );
-
-    // 🖼 upload background
-    $bgPath = null;
-
-    if ($request->hasFile('background')) {
-        $bg = $request->file('background');
-
-        $bgName = time() . '_' . $bg->getClientOriginalName();
-        $bg->move(public_path('uploads/backgrounds'), $bgName);
-
-        $bgPath = '/uploads/backgrounds/' . $bgName;
-    }
-
-    // 💾 lưu DB
     DB::table('posts')->insert([
-        'title' => $request->title,
-        'location' => $request->location,
-        'author' => $request->author,
-
-        // 🔥 luôn lấy thời gian hiện tại
+        'title'      => $request->title,
+        'location'   => $request->location,
+        'author'     => $request->author,
         'dateposted' => now(),
-
-        'content' => $content,
+        'content'    => $content,
         'background' => $bgPath,
         'created_at' => now(),
         'updated_at' => now(),
     ]);
 
-    return redirect()->back()->with('success', 'Upload thành công');
+    return redirect('/admin')->with('success', 'Đăng bài thành công!');
 }
-    
+
+// Upload ảnh từ TinyMCE
+public function uploadImage(Request $request)
+{
+    $request->validate([
+        'file' => 'required|image|max:2048',
+    ]);
+
+    // Tạo thư mục nếu chưa có
+    $uploadPath = public_path('uploads/editor');
+    if (!file_exists($uploadPath)) {
+        mkdir($uploadPath, 0777, true);
+    }
+
+    $file = $request->file('file');
+    $name = time() . '_' . $file->getClientOriginalName();
+    $file->move($uploadPath, $name);
+
+    return response()->json([
+        'location' => '/uploads/editor/' . $name
+    ]);
+}
+
+// Sửa update() thêm content
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'title'    => 'required|string|max:255',
+        'location' => 'required|string|max:255',
+        'author'   => 'required|string|max:255',
+        'content'  => 'required|string',
+    ]);
+
+    $data = [
+        'title'      => $request->title,
+        'location'   => $request->location,
+        'author'     => $request->author,
+        'content'    => clean($request->content),
+        'updated_at' => now(),
+    ];
+
+    // Nếu có upload background mới
+    if ($request->hasFile('background')) {
+        $bg = $request->file('background');
+        $bgName = time() . '_' . $bg->getClientOriginalName();
+        $bg->move(public_path('uploads/backgrounds'), $bgName);
+        $data['background'] = '/uploads/backgrounds/' . $bgName;
+    }
+
+    DB::table('posts')->where('id', $id)->update($data);
+
+    return redirect('/admin')->with('success', 'Cập nhật thành công!');
+}
 
     public function index()
     {
@@ -173,17 +151,6 @@ public function edit($id)
     return view('editpost', compact('post'));
 }
 
-public function update(Request $request, $id)
-{
-    DB::table('posts')->where('id', $id)->update([
-        'title' => $request->title,
-        'location' => $request->location,
-        'author' => $request->author,
-        'updated_at' => now(),
-    ]);
-
-    return redirect('/admin')->with('success', 'Update thành công');
-}
 public function destroy($id)
 {
     $post = Post::findOrFail($id);
