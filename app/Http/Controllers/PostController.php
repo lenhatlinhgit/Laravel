@@ -66,8 +66,8 @@ public function uploadImage(Request $request)
     $file->move($uploadPath, $name);
 
     return response()->json([
-        'location' => '/uploads/editor/' . $name
-    ]);
+    'location' => url('uploads/editor/' . $name)
+]);
 }
 
 // Sửa update() thêm content

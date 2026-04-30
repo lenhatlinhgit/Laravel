@@ -55,6 +55,8 @@ tinymce.init({
     selector: '#editor',
     height: 500,
     promotion: false,
+    convert_urls: false,
+    relative_urls: false,
     plugins: 'image link lists table code fullscreen preview wordcount',
     toolbar: 'undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link image | table | code fullscreen',
     images_upload_url: '/editor/image',
