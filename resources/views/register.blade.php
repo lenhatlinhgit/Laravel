@@ -140,7 +140,7 @@
 
         <!-- LOGO -->
         <div class="login-logo">
-            <img src="http://127.0.0.1:8000/img/logo-300x51.webp" alt="logo">
+            <img src="{{ asset('img/logo-300x51.webp') }}" alt="logo">
         </div>
 
         <!-- FORM -->
