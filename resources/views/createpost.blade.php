@@ -28,9 +28,16 @@
         @csrf
 
         <div class="input-group" style="display:flex;gap:8px;align-items:center;">
-            <input type="url" name="source_url" id="source_url" placeholder="Paste URL for Link Preview" value="{{ old('source_url') }}" style="flex:1;min-width:0;">
-            <button type="button" id="fetchSeoBtn" style="white-space:nowrap;">Link Preview</button>
-        </div>
+    <input type="url" name="source_url" id="source_url"
+           placeholder="Paste URL for Link Preview"
+           value="{{ old('source_url') }}"
+           style="flex:1;min-width:0;">
+
+    <button type="button" id="fetchSeoBtn"
+            style="white-space:nowrap; position:relative; top:-6px;">
+        Link Preview
+    </button>
+</div>
 
         <input type="hidden" name="image_url" id="image_url" value="{{ old('image_url') }}">
         <input type="text" name="title" id="title" placeholder="Title" value="{{ old('title') }}">
