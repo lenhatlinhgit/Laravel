@@ -58,7 +58,7 @@ Route::get('/createpost', [PostController::class, 'createPost'])
 Route::post('/upload', [PostController::class, 'upload'])
     ->middleware('checkrole:admin');
 
-// Fetch SEO metadata from URL for create post
+// Link Preview endpoint (fetch metadata from URL for create post)
 Route::post('/fetch-seo', [PostController::class, 'fetchSeo'])
     ->middleware('checkrole:admin');
 
