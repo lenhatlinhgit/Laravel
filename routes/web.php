@@ -85,3 +85,4 @@ Route::delete('/post/{id}/delete', [PostController::class, 'destroy']);
 // Upload ảnh từ TinyMCE editor
 Route::post('/editor/image', [PostController::class, 'uploadImage'])
     ->middleware('checkrole:admin');
+Route::post('/fetch-seo', [PostController::class, 'fetchSeo']);
