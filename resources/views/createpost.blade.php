@@ -32,6 +32,7 @@
             <button type="button" id="fetchSeoBtn" style="white-space:nowrap;">Link Preview</button>
         </div>
 
+        <input type="hidden" name="image_url" id="image_url" value="{{ old('image_url') }}">
         <input type="text" name="title" id="title" placeholder="Title" value="{{ old('title') }}">
         <input type="text" name="location" id="location" placeholder="Location" value="{{ old('location') }}">
         <input type="text" name="author" id="author" placeholder="Author" value="{{ old('author') }}">
@@ -46,9 +47,13 @@
             <span class="file-name" id="bgName">Chưa chọn file</span>
             <label class="file-btn">
                 Chọn file
-                <input type="file" name="background"
-                    onchange="bgName.textContent=this.files[0]?.name">
+                <input type="file" name="background" id="backgroundInput"
+                    onchange="handleBackgroundFileChange(this)">
             </label>
+            <div id="previewImageContainer" style="display:none;margin-top:12px;">
+                <label>Ảnh lấy từ Link Preview (sẽ dùng nếu không chọn file):</label>
+                <img id="previewImage" src="" alt="Preview image" style="max-width:100%;max-height:220px;display:block;margin-top:8px;border:1px solid #ccc;border-radius:6px;">
+            </div>
         </div>
 
         <button type="submit">Đăng bài</button>
@@ -91,6 +96,32 @@ tinymce.init({
     }
 });
 
+function handleBackgroundFileChange(input) {
+    const previewContainer = document.getElementById('previewImageContainer');
+    const previewImage = document.getElementById('previewImage');
+    const imageUrlField = document.getElementById('image_url');
+    const bgNameField = document.getElementById('bgName');
+
+    if (input.files && input.files.length > 0) {
+        if (bgNameField) {
+            bgNameField.textContent = input.files[0].name;
+        }
+        if (imageUrlField) {
+            imageUrlField.value = '';
+        }
+        if (previewImage) {
+            previewImage.src = '';
+        }
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+        }
+    } else {
+        if (bgNameField) {
+            bgNameField.textContent = 'Chưa chọn file';
+        }
+    }
+}
+
 const fetchSeoBtn = document.getElementById('fetchSeoBtn');
 if (fetchSeoBtn) {
     fetchSeoBtn.addEventListener('click', async function () {
@@ -99,6 +130,11 @@ if (fetchSeoBtn) {
         const locationField = document.getElementById('location');
         const authorField = document.getElementById('author');
         const editorField = document.getElementById('editor');
+        const bgFileInput = document.getElementById('backgroundInput');
+        const bgNameField = document.getElementById('bgName');
+        const previewContainer = document.getElementById('previewImageContainer');
+        const previewImage = document.getElementById('previewImage');
+        const imageUrlField = document.getElementById('image_url');
         const url = urlField.value.trim();
 
         if (!url) {
@@ -149,6 +185,20 @@ if (fetchSeoBtn) {
             if (data.content) {
                 editorField.value = data.content;
                 tinymce.get('editor')?.setContent(data.content);
+            }
+            if (data.image_url) {
+                if (imageUrlField) {
+                    imageUrlField.value = data.image_url;
+                }
+                if (previewImage) {
+                    previewImage.src = data.image_url;
+                }
+                if (previewContainer) {
+                    previewContainer.style.display = 'block';
+                }
+                if (bgNameField && bgFileInput && !bgFileInput.files.length) {
+                    bgNameField.textContent = 'Ảnh Link Preview được chọn tự động';
+                }
             }
         } catch (error) {
             alert('Lỗi khi lấy dữ liệu từ URL.');

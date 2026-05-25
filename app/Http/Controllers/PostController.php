@@ -23,16 +23,71 @@ class PostController extends Controller
         'location'   => 'required|string|max:255',
         'author'     => 'required|string|max:255',
         'content'    => 'required|string',
-        'background' => 'required|image|max:4096',
+        'background' => 'nullable|image|max:4096',
+        'image_url'  => 'nullable|url',
     ]);
 
-    // Upload background
-    $bg = $request->file('background');
-    $bgName = time() . '_' . $bg->getClientOriginalName();
-    $bg->move(public_path('uploads/backgrounds'), $bgName);
-    $bgPath = '/uploads/backgrounds/' . $bgName;
+    $bgPath = null;
 
-    // Sanitize content (loại bỏ script độc hại)
+    if ($request->hasFile('background')) {
+        $bg = $request->file('background');
+        $bgName = time() . '_' . $bg->getClientOriginalName();
+        $bg->move(public_path('uploads/backgrounds'), $bgName);
+        $bgPath = '/uploads/backgrounds/' . $bgName;
+    } elseif ($request->image_url) {
+        try {
+            $imageResponse = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept' => 'image/*,*/*;q=0.8',
+            ])->withOptions(['allow_redirects' => true])->timeout(15)->get($request->image_url);
+
+            if ($imageResponse->failed()) {
+                throw new \Exception('HTTP status ' . $imageResponse->status());
+            }
+        } catch (\Throwable $e) {
+            try {
+                $imageResponse = Http::withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                    'Accept' => 'image/*,*/*;q=0.8',
+                ])->withOptions(['allow_redirects' => true, 'verify' => false])->timeout(15)->get($request->image_url);
+
+                if ($imageResponse->failed()) {
+                    throw new \Exception('HTTP status ' . $imageResponse->status());
+                }
+            } catch (\Throwable $e2) {
+                return back()->withErrors(['image_url' => 'Không thể tải ảnh nền từ URL.'])->withInput();
+            }
+        }
+
+        $contentType = $imageResponse->header('Content-Type');
+        $extension = 'jpg';
+        if (stripos($contentType, 'png') !== false) {
+            $extension = 'png';
+        } elseif (stripos($contentType, 'gif') !== false) {
+            $extension = 'gif';
+        } elseif (stripos($contentType, 'webp') !== false) {
+            $extension = 'webp';
+        } elseif (stripos($contentType, 'jpeg') !== false || stripos($contentType, 'jpg') !== false) {
+            $extension = 'jpg';
+        }
+
+        $urlPath = parse_url($request->image_url, PHP_URL_PATH);
+        $fileName = pathinfo($urlPath, PATHINFO_FILENAME) ?: 'og_image';
+        $bgName = time() . '_' . preg_replace('/[^A-Za-z0-9-_]/', '_', $fileName) . '.' . $extension;
+
+        $uploadPath = public_path('uploads/backgrounds');
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0777, true);
+        }
+
+        file_put_contents($uploadPath . '/' . $bgName, $imageResponse->body());
+        $bgPath = '/uploads/backgrounds/' . $bgName;
+    }
+
+    if (!$bgPath) {
+        return back()->withErrors(['background' => 'Vui lòng chọn ảnh background hoặc sử dụng hình từ Link Preview.'])->withInput();
+    }
+
     $content = clean($request->content);
 
     DB::table('posts')->insert([
@@ -202,6 +257,15 @@ public function fetchSeo(Request $request)
         $location = parse_url($request->url, PHP_URL_HOST) ?: '';
     }
 
+    $imageUrl = $this->getMetaValue($xpath, [
+        '//meta[@property="og:image"]/@content',
+        '//meta[@property="og:image:secure_url"]/@content',
+        '//meta[@itemprop="thumbnailUrl"]/@content',
+        '//meta[@name="twitter:image"]/@content',
+        '//meta[@name="twitter:image:src"]/@content',
+        '//meta[@name="image"]/@content',
+    ]);
+
     $content = $this->extractMainContent($dom, $xpath);
 
     return response()->json([
@@ -209,6 +273,7 @@ public function fetchSeo(Request $request)
         'location' => $location,
         'author' => $author,
         'content' => $content,
+        'image_url' => $imageUrl,
     ]);
 }
 
