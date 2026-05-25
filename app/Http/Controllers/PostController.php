@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Post;
 use App\Models\User;
 use ZipArchive;
+use Illuminate\Support\Str;
+use App\Models\Location;
 
 class PostController extends Controller
 {
@@ -90,9 +92,8 @@ class PostController extends Controller
 
     $content = clean($request->content);
 
-    DB::table('posts')->insert([
+    $postId = DB::table('posts')->insertGetId([
         'title'      => $request->title,
-        'location'   => $request->location,
         'author'     => $request->author,
         'dateposted' => now(),
         'content'    => $content,
@@ -100,6 +101,47 @@ class PostController extends Controller
         'created_at' => now(),
         'updated_at' => now(),
     ]);
+
+    $locations = explode(',', $request->location);
+
+foreach ($locations as $loc) {
+
+    $loc = trim($loc);
+
+    if (empty($loc)) {
+        continue;
+    }
+
+    $location = DB::table('locations')
+        ->where('name', $loc)
+        ->first();
+
+    if (!$location) {
+
+        $locationId = DB::table('locations')
+            ->insertGetId([
+
+                'name' => $loc,
+
+                'slug' => Str::slug($loc),
+
+                'created_at' => now(),
+
+                'updated_at' => now(),
+            ]);
+
+    } else {
+
+        $locationId = $location->id;
+    }
+
+    DB::table('post_locations')->insert([
+
+        'post_id' => $postId,
+
+        'location_id' => $locationId,
+    ]);
+}
 
     return redirect('/admin')->with('success', 'Đăng bài thành công!');
 }
@@ -159,12 +201,14 @@ public function update(Request $request, $id)
 
     public function index()
     {
-        $posts = DB::table('posts')->orderBy('views', 'desc')->paginate(4);
+        $posts = Post::with('locations')
+    ->orderBy('views', 'desc')
+    ->paginate(4);
         return view('home', compact('posts'));
     }
     public function show($id)
 {
-    $post = Post::findOrFail($id);
+    $post = Post::with('locations')->findOrFail($id);
 
     // 🔥 tăng view mỗi lần reload / truy cập
     $post->increment('views');
@@ -172,9 +216,13 @@ public function update(Request $request, $id)
     return view('post', compact('post'));
 }
 
-public function byLocation($location)
+public function byLocation($slug)
 {
-    $posts = Post::where('location', $location)->paginate(4);
+    $location = Location::where('slug', $slug)
+        ->firstOrFail();
+
+    $posts = $location->posts()
+        ->paginate(4);
 
     return view('location', compact('posts', 'location'));
 }
@@ -368,13 +416,13 @@ private function getPosts()
 }
 public function edit($id)
 {
-    $post = Post::findOrFail($id);
+    $post = Post::with('locations')->findOrFail($id);
     return view('editpost', compact('post'));
 }
 
 public function destroy($id)
 {
-    $post = Post::findOrFail($id);
+    $post = Post::with('locations')->findOrFail($id);
 
     // nếu có file ZIP / background thì có thể xóa thêm (tuỳ bạn)
     DB::table('posts')->where('id', $id)->delete();

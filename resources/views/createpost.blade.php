@@ -34,7 +34,7 @@
 
         <input type="hidden" name="image_url" id="image_url" value="{{ old('image_url') }}">
         <input type="text" name="title" id="title" placeholder="Title" value="{{ old('title') }}">
-        <input type="text" name="location" id="location" placeholder="Location" value="{{ old('location') }}">
+        <input type="text" name="location" id="location" placeholder="Example: Hoa Lu,Ninh Binh,Northern Vietnam" value="{{ old('location') }}">
         <input type="text" name="author" id="author" placeholder="Author" value="{{ old('author') }}">
 
         {{-- TinyMCE Editor --}}

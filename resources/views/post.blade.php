@@ -7,7 +7,15 @@
                     loading="lazy" />
             </picture>
             <div class="main-container">
-                <div class="location"><a href="{{ url('/location/' . $post->location) }}">{{ $post->location }}</a></div>
+                <div class="location-wrapper" style="display:flex; gap:8px; flex-wrap:wrap;">
+    @foreach($post->locations as $location)
+        <div class="location">
+            <a href="{{ url('/location/' . $location->slug) }}">
+                {{ $location->name }}
+            </a>
+        </div>
+    @endforeach
+</div>
                 <div class="main-titlepost">{{ $post->title }}</div>
                 <div class="main-time">
                     <p>{{ $post->author }}</p>

@@ -4,7 +4,7 @@
 
 <main>
             <div class="main-content">
-                <h2 class="Category">Category: {{ $location }}</h2>
+                <h2 class="Category">Category: {{ $location->name ?? $location }}</h2>
                 <div class="main-components">
                     @foreach($posts as $post)
                     <div class="main-component">
@@ -16,7 +16,15 @@
                             </a>
                         </div>
                         <div class="main-componentcontent">
-                            <div class="location"><a href="{{ url('/location/' . $post->location) }}">{{ $post->location }}</a></div>
+                            <div class="location-wrapper" style="display:flex; gap:8px; flex-wrap:wrap;">
+    @foreach($post->locations as $location)
+        <div class="location">
+            <a href="{{ url('/location/' . $location->slug) }}">
+                {{ $location->name }}
+            </a>
+        </div>
+    @endforeach
+</div>
                             <h3 class="title"><a href="{{ url('/post/' . $post->id) }}">{{ $post->title }}</a></h3>
                             <p class="time">{{ \Carbon\Carbon::parse($post->dateposted)->format('F d, Y') }}</p>
                             <p class="intro">Aitae lectus dapibus nisl bibendum erat. Si sagittis laoreet nisl integer
