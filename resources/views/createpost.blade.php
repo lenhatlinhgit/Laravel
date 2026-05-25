@@ -27,9 +27,14 @@
     <form action="/upload" method="POST" enctype="multipart/form-data">
         @csrf
 
-        <input type="text" name="title" placeholder="Title" value="{{ old('title') }}">
-        <input type="text" name="location" placeholder="Location" value="{{ old('location') }}">
-        <input type="text" name="author" placeholder="Author" value="{{ old('author') }}">
+        <div class="input-group">
+            <input type="url" name="source_url" id="source_url" placeholder="Paste URL để tự động lấy SEO" value="{{ old('source_url') }}">
+            <button type="button" id="fetchSeoBtn">Lấy SEO</button>
+        </div>
+
+        <input type="text" name="title" id="title" placeholder="Title" value="{{ old('title') }}">
+        <input type="text" name="location" id="location" placeholder="Location" value="{{ old('location') }}">
+        <input type="text" name="author" id="author" placeholder="Author" value="{{ old('author') }}">
 
         {{-- TinyMCE Editor --}}
         <label>Nội dung bài viết:</label>
@@ -85,5 +90,73 @@ tinymce.init({
         });
     }
 });
+
+const fetchSeoBtn = document.getElementById('fetchSeoBtn');
+if (fetchSeoBtn) {
+    fetchSeoBtn.addEventListener('click', async function () {
+        const urlField = document.getElementById('source_url');
+        const titleField = document.getElementById('title');
+        const locationField = document.getElementById('location');
+        const authorField = document.getElementById('author');
+        const editorField = document.getElementById('editor');
+        const url = urlField.value.trim();
+
+        if (!url) {
+            alert('Vui lòng nhập URL trước khi lấy dữ liệu.');
+            return;
+        }
+
+        fetchSeoBtn.disabled = true;
+        fetchSeoBtn.textContent = 'Đang lấy...';
+
+        try {
+            const token = document.querySelector('input[name="_token"]').value;
+            const response = await fetch('/fetch-seo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token,
+                },
+                body: JSON.stringify({ url }),
+            });
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                const text = await response.text();
+                console.error('fetch-seo response parse error:', parseError, text);
+                alert('Không thể lấy dữ liệu từ URL. Server trả về dữ liệu không hợp lệ.');
+                return;
+            }
+
+            if (!response.ok) {
+                const message = data.error || (data.errors ? Object.values(data.errors).flat()[0] : null) || response.statusText;
+                alert(message || 'Không thể lấy dữ liệu từ URL.');
+                return;
+            }
+
+            if (data.title) {
+                titleField.value = data.title;
+            }
+            if (data.location) {
+                locationField.value = data.location;
+            }
+            if (data.author) {
+                authorField.value = data.author;
+            }
+            if (data.content) {
+                editorField.value = data.content;
+                tinymce.get('editor')?.setContent(data.content);
+            }
+        } catch (error) {
+            alert('Lỗi khi lấy dữ liệu từ URL.');
+        } finally {
+            fetchSeoBtn.disabled = false;
+            fetchSeoBtn.textContent = 'Lấy SEO';
+        }
+    });
+}
 </script>
 @endsection

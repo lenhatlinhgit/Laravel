@@ -58,6 +58,10 @@ Route::get('/createpost', [PostController::class, 'createPost'])
 Route::post('/upload', [PostController::class, 'upload'])
     ->middleware('checkrole:admin');
 
+// Fetch SEO metadata from URL for create post
+Route::post('/fetch-seo', [PostController::class, 'fetchSeo'])
+    ->middleware('checkrole:admin');
+
 // Change password page
 Route::get('/changepassword', [AuthController::class, 'showChangePassword'])
     ->middleware('checkrole:admin');

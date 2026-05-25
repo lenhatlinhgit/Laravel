@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use App\Models\Post;
 use App\Models\User;
 use ZipArchive;
@@ -131,6 +132,161 @@ public function createPost()
 {
     return view('createpost');
 }
+
+public function fetchSeo(Request $request)
+{
+    $request->validate([
+        'url' => 'required|url',
+    ]);
+
+    try {
+        $response = Http::withHeaders([
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        ])->timeout(15)->get($request->url);
+    } catch (\Throwable $e) {
+        $err = $e->getMessage();
+
+        // nếu lỗi liên quan đến SSL (cURL 60 hoặc chứng chỉ self-signed), thử lại với verify=false
+        if (stripos($err, 'curl error 60') !== false || stripos($err, 'SSL') !== false || stripos($err, 'self-signed') !== false) {
+            try {
+                $response = Http::withOptions(['verify' => false])->withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                ])->timeout(15)->get($request->url);
+            } catch (\Throwable $e2) {
+                return response()->json([
+                    'error' => 'Không thể truy cập URL đã nhập (SSL fallback thất bại): ' . $e2->getMessage(),
+                ], 422);
+            }
+        } else {
+            return response()->json([
+                'error' => 'Không thể truy cập URL đã nhập: ' . $err,
+            ], 422);
+        }
+    }
+
+    if (!isset($response) || $response->failed()) {
+        return response()->json(['error' => 'Không thể truy cập URL đã nhập.'], 422);
+    }
+
+    $html = $response->body();
+    libxml_use_internal_errors(true);
+    $dom = new \DOMDocument();
+    if (!@$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'))) {
+        return response()->json(['error' => 'Không thể phân tích HTML của URL.'], 422);
+    }
+    $xpath = new \DOMXPath($dom);
+
+    $title = $this->getMetaValue($xpath, [
+        '//title',
+        '//meta[@property="og:title"]/@content',
+        '//meta[@name="twitter:title"]/@content',
+        '//meta[@name="title"]/@content',
+    ]);
+
+    $author = $this->getMetaValue($xpath, [
+        '//meta[@name="author"]/@content',
+        '//meta[@property="article:author"]/@content',
+        '//meta[@name="article:author"]/@content',
+        '//meta[@name="twitter:creator"]/@content',
+    ]);
+
+    $location = $this->getMetaValue($xpath, [
+        '//meta[@property="article:section"]/@content',
+        '//meta[@name="section"]/@content',
+        '//meta[@property="og:site_name"]/@content',
+        '//meta[@name="application-name"]/@content',
+    ]);
+    if (empty($location)) {
+        $location = parse_url($request->url, PHP_URL_HOST) ?: '';
+    }
+
+    $content = $this->extractMainContent($dom, $xpath);
+
+    return response()->json([
+        'title' => $title,
+        'location' => $location,
+        'author' => $author,
+        'content' => $content,
+    ]);
+}
+
+private function getMetaValue(\DOMXPath $xpath, array $queries)
+{
+    foreach ($queries as $query) {
+        $nodes = $xpath->query($query);
+        if ($nodes && $nodes->length) {
+            $value = trim($nodes->item(0)->nodeValue);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+    }
+    return '';
+}
+
+private function extractMainContent(\DOMDocument $dom, \DOMXPath $xpath)
+{
+    $paragraphs = [];
+
+    $articleNodes = $xpath->query('//article//p');
+    if ($articleNodes && $articleNodes->length > 0) {
+        foreach ($articleNodes as $node) {
+            $text = trim($node->textContent);
+            if ($text !== '') {
+                $paragraphs[] = preg_replace('/\s+/', ' ', $text);
+            }
+            if (count($paragraphs) >= 6) {
+                break;
+            }
+        }
+    }
+
+    if (empty($paragraphs)) {
+        $mainNodes = $xpath->query('//main//p | //div[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "content")]//p | //div[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "content")]//p | //div[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "article")]//p');
+        if ($mainNodes && $mainNodes->length > 0) {
+            foreach ($mainNodes as $node) {
+                $text = trim($node->textContent);
+                if ($text !== '') {
+                    $paragraphs[] = preg_replace('/\s+/', ' ', $text);
+                }
+                if (count($paragraphs) >= 6) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (empty($paragraphs)) {
+        $bodyParagraphs = $xpath->query('//body//p');
+        if ($bodyParagraphs && $bodyParagraphs->length > 0) {
+            foreach ($bodyParagraphs as $node) {
+                $text = trim($node->textContent);
+                if ($text !== '') {
+                    $paragraphs[] = preg_replace('/\s+/', ' ', $text);
+                }
+                if (count($paragraphs) >= 6) {
+                    break;
+                }
+            }
+        }
+    }
+
+    if (empty($paragraphs)) {
+        $description = $this->getMetaValue($xpath, [
+            '//meta[@property="og:description"]/@content',
+            '//meta[@name="twitter:description"]/@content',
+            '//meta[@name="description"]/@content',
+        ]);
+        if ($description !== '') {
+            return $description;
+        }
+    }
+
+    return implode("\n\n", array_slice($paragraphs, 0, 6));
+}
+
 private function getDashboardStats()
 {
     return [

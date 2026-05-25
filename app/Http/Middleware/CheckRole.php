@@ -11,6 +11,9 @@ class CheckRole
     {
         // chưa login
         if (!session('user')) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Vui lòng đăng nhập để tiếp tục.'], 401);
+            }
             return redirect('/login');
         }
 
@@ -18,6 +21,9 @@ class CheckRole
 
         // nếu có truyền role và không nằm trong danh sách
         if (!empty($roles) && !in_array($userRole, $roles)) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Bạn không có quyền truy cập.'], 403);
+            }
             return redirect('/home'); // hoặc trang bạn muốn
         }
 
