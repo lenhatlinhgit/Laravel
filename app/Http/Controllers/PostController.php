@@ -180,7 +180,6 @@ public function update(Request $request, $id)
 
     $data = [
         'title'      => $request->title,
-        'location'   => $request->location,
         'author'     => $request->author,
         'content'    => clean($request->content),
         'updated_at' => now(),
@@ -194,7 +193,48 @@ public function update(Request $request, $id)
         $data['background'] = '/uploads/backgrounds/' . $bgName;
     }
 
+    // Update bảng posts
     DB::table('posts')->where('id', $id)->update($data);
+
+    // ============================
+    // FIX LOCATION (many-to-many)
+    // ============================
+
+    // Xóa location cũ
+    DB::table('post_locations')->where('post_id', $id)->delete();
+
+    // Tách location theo dấu phẩy
+    $locations = explode(',', $request->location);
+
+    foreach ($locations as $loc) {
+
+        $loc = trim($loc);
+
+        if (empty($loc)) continue;
+
+        // tìm location đã tồn tại chưa
+        $location = DB::table('locations')
+            ->where('name', $loc)
+            ->first();
+
+        // nếu chưa có thì tạo mới
+        if (!$location) {
+            $locationId = DB::table('locations')->insertGetId([
+                'name' => $loc,
+                'slug' => Str::slug($loc),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            $locationId = $location->id;
+        }
+
+        // gán vào pivot table
+        DB::table('post_locations')->insert([
+            'post_id' => $id,
+            'location_id' => $locationId,
+        ]);
+    }
 
     return redirect('/admin')->with('success', 'Cập nhật thành công!');
 }
@@ -417,7 +457,13 @@ private function getPosts()
 public function edit($id)
 {
     $post = Post::with('locations')->findOrFail($id);
-    return view('editpost', compact('post'));
+
+    // convert locations thành chuỗi "A, B, C"
+    $locationString = $post->locations
+        ->pluck('name')
+        ->implode(', ');
+
+    return view('editpost', compact('post', 'locationString'));
 }
 
 public function destroy($id)

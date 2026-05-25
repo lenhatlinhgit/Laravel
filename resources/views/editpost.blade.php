@@ -18,7 +18,7 @@
         @csrf
 
         <input type="text" name="title" placeholder="Title" value="{{ $post->title }}">
-        <input type="text" name="location" placeholder="Location" value="{{ $post->location }}">
+        <input type="text" name="location" placeholder="Location" value="{{ old('location', $locationString) }}">
         <input type="text" name="author" placeholder="Author" value="{{ $post->author }}">
 
         {{-- TinyMCE Editor --}}
