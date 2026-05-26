@@ -437,26 +437,32 @@ class PostController extends Controller
         // location
         // ======================
 
-        $location = $this->crawlFirst($crawler, [
+$location = $this->crawlFirst($crawler, [
 
-            // category/meta
-            'meta[property="article:section"]' => 'content',
-            'meta[name="section"]' => 'content',
+    // meta
+    'meta[property="article:section"]' => 'content',
+    'meta[name="section"]' => 'content',
 
-            // VnExpress
-            '.breadcrumb li:last-child' => null,
-            '.box-breadcrumb a:last-child' => null,
+    // VnExpress mới
+    '.header-title .parent-cate' => null,
+    '.breadcrumb li a' => null,
 
-            // Vietnamnet
-            '.bread-crumb-detail__item:last-child' => null,
-            '.breadcrumb-box__link:last-child' => null,
-        ]);
+    // VnExpress cũ
+    '.box-breadcrumb a' => null,
 
-        // fallback
-        if (!$location || strlen(trim($location)) < 2) {
+    // Thanh Niên
+    '.breadcrumb__item a' => null,
+    '.breadcrumb__item' => null,
 
-            $location = 'Thế giới';
-        }
+    // =====================
+    // THAY Vietnamnet / Dân Trí -> Người Lao Động
+    // =====================
+    '.nld-breadcrumb a:last-child' => null,
+    '.nld-breadcrumb a' => null,
+    '.breadcrumb-nld a:last-child' => null,
+    '.breadcrumb-nld a' => null,
+]);
+
 
         // ======================
         // image

@@ -46,7 +46,7 @@
                 name="source_url"
                 id="source_url"
 
-                placeholder="Ưu tiên link bài viết từ VnExpress, Tuổi Trẻ, Thanh Niên, Vietnamnet để được hỗ trợ tốt nhất"
+                placeholder="Ưu tiên link bài viết từ VnExpress, Tuổi Trẻ, Thanh Niên, Người lao động để được hỗ trợ tốt nhất"
 
                 value="{{ old('source_url') }}"
 
