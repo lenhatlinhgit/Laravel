@@ -35,7 +35,7 @@
 
     <button type="button" id="fetchSeoBtn"
             style="white-space:nowrap; position:relative; top:-6px;">
-        Link Preview
+        Lấy bài viết từ URL
     </button>
 </div>
 
