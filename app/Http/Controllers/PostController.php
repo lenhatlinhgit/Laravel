@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Models\Post;
 use App\Models\User;
-use ZipArchive;
 use Illuminate\Support\Str;
 use App\Models\Location;
+use Symfony\Component\DomCrawler\Crawler;
 
 class PostController extends Controller
 {
@@ -19,460 +19,419 @@ class PostController extends Controller
     }
 
     public function upload(Request $request)
-{
-    $request->validate([
-        'title'      => 'required|string|max:255',
-        'location'   => 'required|string|max:255',
-        'author'     => 'required|string|max:255',
-        'content'    => 'required|string',
-        'background' => 'nullable|image|max:4096',
-        'image_url'  => 'nullable|url',
-    ]);
+    {
+        $request->validate([
+            'title'      => 'required|string|max:255',
+            'location'   => 'required|string|max:255',
+            'author'     => 'required|string|max:255',
+            'content'    => 'required|string',
+            'background' => 'nullable|image|max:4096',
+            'image_url'  => 'nullable|url',
+        ]);
 
-    $bgPath = null;
+        $bgPath = null;
 
-    if ($request->hasFile('background')) {
-        $bg = $request->file('background');
-        $bgName = time() . '_' . $bg->getClientOriginalName();
-        $bg->move(public_path('uploads/backgrounds'), $bgName);
-        $bgPath = '/uploads/backgrounds/' . $bgName;
-    } elseif ($request->image_url) {
-        try {
-            $imageResponse = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-                'Accept' => 'image/*,*/*;q=0.8',
-            ])->withOptions(['allow_redirects' => true])->timeout(15)->get($request->image_url);
-
-            if ($imageResponse->failed()) {
-                throw new \Exception('HTTP status ' . $imageResponse->status());
-            }
-        } catch (\Throwable $e) {
+        if ($request->hasFile('background')) {
+            $bg = $request->file('background');
+            $bgName = time() . '_' . $bg->getClientOriginalName();
+            $bg->move(public_path('uploads/backgrounds'), $bgName);
+            $bgPath = '/uploads/backgrounds/' . $bgName;
+        } elseif ($request->image_url) {
             try {
                 $imageResponse = Http::withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-                    'Accept' => 'image/*,*/*;q=0.8',
-                ])->withOptions(['allow_redirects' => true, 'verify' => false])->timeout(15)->get($request->image_url);
+                    'Accept'     => 'image/*,*/*;q=0.8',
+                ])->withOptions(['allow_redirects' => true])->timeout(15)->get($request->image_url);
 
                 if ($imageResponse->failed()) {
                     throw new \Exception('HTTP status ' . $imageResponse->status());
                 }
-            } catch (\Throwable $e2) {
-                return back()->withErrors(['image_url' => 'Không thể tải ảnh nền từ URL.'])->withInput();
+            } catch (\Throwable $e) {
+                try {
+                    $imageResponse = Http::withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                        'Accept'     => 'image/*,*/*;q=0.8',
+                    ])->withOptions(['allow_redirects' => true, 'verify' => false])->timeout(15)->get($request->image_url);
+
+                    if ($imageResponse->failed()) {
+                        throw new \Exception('HTTP status ' . $imageResponse->status());
+                    }
+                } catch (\Throwable $e2) {
+                    return back()->withErrors(['image_url' => 'Không thể tải ảnh nền từ URL.'])->withInput();
+                }
             }
-        }
 
-        $contentType = $imageResponse->header('Content-Type');
-        $extension = 'jpg';
-        if (stripos($contentType, 'png') !== false) {
-            $extension = 'png';
-        } elseif (stripos($contentType, 'gif') !== false) {
-            $extension = 'gif';
-        } elseif (stripos($contentType, 'webp') !== false) {
-            $extension = 'webp';
-        } elseif (stripos($contentType, 'jpeg') !== false || stripos($contentType, 'jpg') !== false) {
+            $contentType = $imageResponse->header('Content-Type');
             $extension = 'jpg';
+            if (stripos($contentType, 'png') !== false) $extension = 'png';
+            elseif (stripos($contentType, 'gif') !== false) $extension = 'gif';
+            elseif (stripos($contentType, 'webp') !== false) $extension = 'webp';
+
+            $urlPath  = parse_url($request->image_url, PHP_URL_PATH);
+            $fileName = pathinfo($urlPath, PATHINFO_FILENAME) ?: 'og_image';
+            $bgName   = time() . '_' . preg_replace('/[^A-Za-z0-9-_]/', '_', $fileName) . '.' . $extension;
+
+            $uploadPath = public_path('uploads/backgrounds');
+            if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+
+            file_put_contents($uploadPath . '/' . $bgName, $imageResponse->body());
+            $bgPath = '/uploads/backgrounds/' . $bgName;
         }
 
-        $urlPath = parse_url($request->image_url, PHP_URL_PATH);
-        $fileName = pathinfo($urlPath, PATHINFO_FILENAME) ?: 'og_image';
-        $bgName = time() . '_' . preg_replace('/[^A-Za-z0-9-_]/', '_', $fileName) . '.' . $extension;
-
-        $uploadPath = public_path('uploads/backgrounds');
-        if (!file_exists($uploadPath)) {
-            mkdir($uploadPath, 0777, true);
+        if (!$bgPath) {
+            return back()->withErrors(['background' => 'Vui lòng chọn ảnh background hoặc sử dụng hình từ Link Preview.'])->withInput();
         }
 
-        file_put_contents($uploadPath . '/' . $bgName, $imageResponse->body());
-        $bgPath = '/uploads/backgrounds/' . $bgName;
-    }
+        $content = clean($request->content);
 
-    if (!$bgPath) {
-        return back()->withErrors(['background' => 'Vui lòng chọn ảnh background hoặc sử dụng hình từ Link Preview.'])->withInput();
-    }
-
-    $content = clean($request->content);
-
-    $postId = DB::table('posts')->insertGetId([
-        'title'      => $request->title,
-        'author'     => $request->author,
-        'dateposted' => now(),
-        'content'    => $content,
-        'background' => $bgPath,
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
-
-    $locations = explode(',', $request->location);
-
-foreach ($locations as $loc) {
-
-    $loc = trim($loc);
-
-    if (empty($loc)) {
-        continue;
-    }
-
-    $location = DB::table('locations')
-        ->where('name', $loc)
-        ->first();
-
-    if (!$location) {
-
-        $locationId = DB::table('locations')
-            ->insertGetId([
-
-                'name' => $loc,
-
-                'slug' => Str::slug($loc),
-
-                'created_at' => now(),
-
-                'updated_at' => now(),
-            ]);
-
-    } else {
-
-        $locationId = $location->id;
-    }
-
-    DB::table('post_locations')->insert([
-
-        'post_id' => $postId,
-
-        'location_id' => $locationId,
-    ]);
-}
-
-    return redirect('/admin')->with('success', 'Đăng bài thành công!');
-}
-
-// Upload ảnh từ TinyMCE
-public function uploadImage(Request $request)
-{
-    $request->validate([
-        'file' => 'required|image|max:2048',
-    ]);
-
-    // Tạo thư mục nếu chưa có
-    $uploadPath = public_path('uploads/editor');
-    if (!file_exists($uploadPath)) {
-        mkdir($uploadPath, 0777, true);
-    }
-
-    $file = $request->file('file');
-    $name = time() . '_' . $file->getClientOriginalName();
-    $file->move($uploadPath, $name);
-
-    return response()->json([
-    'location' => url('uploads/editor/' . $name)
-]);
-}
-
-// Sửa update() thêm content
-public function update(Request $request, $id)
-{
-    $request->validate([
-        'title'    => 'required|string|max:255',
-        'location' => 'required|string|max:255',
-        'author'   => 'required|string|max:255',
-        'content'  => 'required|string',
-    ]);
-
-    $data = [
-        'title'      => $request->title,
-        'author'     => $request->author,
-        'content'    => clean($request->content),
-        'updated_at' => now(),
-    ];
-
-    // Nếu có upload background mới
-    if ($request->hasFile('background')) {
-        $bg = $request->file('background');
-        $bgName = time() . '_' . $bg->getClientOriginalName();
-        $bg->move(public_path('uploads/backgrounds'), $bgName);
-        $data['background'] = '/uploads/backgrounds/' . $bgName;
-    }
-
-    // Update bảng posts
-    DB::table('posts')->where('id', $id)->update($data);
-
-    // ============================
-    // FIX LOCATION (many-to-many)
-    // ============================
-
-    // Xóa location cũ
-    DB::table('post_locations')->where('post_id', $id)->delete();
-
-    // Tách location theo dấu phẩy
-    $locations = explode(',', $request->location);
-
-    foreach ($locations as $loc) {
-
-        $loc = trim($loc);
-
-        if (empty($loc)) continue;
-
-        // tìm location đã tồn tại chưa
-        $location = DB::table('locations')
-            ->where('name', $loc)
-            ->first();
-
-        // nếu chưa có thì tạo mới
-        if (!$location) {
-            $locationId = DB::table('locations')->insertGetId([
-                'name' => $loc,
-                'slug' => Str::slug($loc),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        } else {
-            $locationId = $location->id;
-        }
-
-        // gán vào pivot table
-        DB::table('post_locations')->insert([
-            'post_id' => $id,
-            'location_id' => $locationId,
+        $postId = DB::table('posts')->insertGetId([
+            'title'      => $request->title,
+            'author'     => $request->author,
+            'dateposted' => now(),
+            'content'    => $content,
+            'background' => $bgPath,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
+
+        $locations = explode(',', $request->location);
+
+        foreach ($locations as $loc) {
+            $loc = trim($loc);
+            if (empty($loc)) continue;
+
+            $location = DB::table('locations')->where('name', $loc)->first();
+
+            if (!$location) {
+                $locationId = DB::table('locations')->insertGetId([
+                    'name'       => $loc,
+                    'slug'       => Str::slug($loc),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $locationId = $location->id;
+            }
+
+            DB::table('post_locations')->insert([
+                'post_id'     => $postId,
+                'location_id' => $locationId,
+            ]);
+        }
+
+        return redirect('/admin')->with('success', 'Đăng bài thành công!');
     }
 
-    return redirect('/admin')->with('success', 'Cập nhật thành công!');
-}
+    public function uploadImage(Request $request)
+    {
+        $request->validate(['file' => 'required|image|max:2048']);
+
+        $uploadPath = public_path('uploads/editor');
+        if (!file_exists($uploadPath)) mkdir($uploadPath, 0777, true);
+
+        $file = $request->file('file');
+        $name = time() . '_' . $file->getClientOriginalName();
+        $file->move($uploadPath, $name);
+
+        return response()->json(['location' => url('uploads/editor/' . $name)]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'title'    => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'author'   => 'required|string|max:255',
+            'content'  => 'required|string',
+        ]);
+
+        $data = [
+            'title'      => $request->title,
+            'author'     => $request->author,
+            'content'    => clean($request->content),
+            'updated_at' => now(),
+        ];
+
+        if ($request->hasFile('background')) {
+            $bg     = $request->file('background');
+            $bgName = time() . '_' . $bg->getClientOriginalName();
+            $bg->move(public_path('uploads/backgrounds'), $bgName);
+            $data['background'] = '/uploads/backgrounds/' . $bgName;
+        }
+
+        DB::table('posts')->where('id', $id)->update($data);
+        DB::table('post_locations')->where('post_id', $id)->delete();
+
+        $locations = explode(',', $request->location);
+
+        foreach ($locations as $loc) {
+            $loc = trim($loc);
+            if (empty($loc)) continue;
+
+            $location = DB::table('locations')->where('name', $loc)->first();
+
+            if (!$location) {
+                $locationId = DB::table('locations')->insertGetId([
+                    'name'       => $loc,
+                    'slug'       => Str::slug($loc),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                $locationId = $location->id;
+            }
+
+            DB::table('post_locations')->insert([
+                'post_id'     => $id,
+                'location_id' => $locationId,
+            ]);
+        }
+
+        return redirect('/admin')->with('success', 'Cập nhật thành công!');
+    }
 
     public function index()
     {
-        $posts = Post::with('locations')
-    ->orderBy('views', 'desc')
-    ->paginate(4);
+        $posts = Post::with('locations')->orderBy('views', 'desc')->paginate(4);
         return view('home', compact('posts'));
     }
+
     public function show($id)
-{
-    $post = Post::with('locations')->findOrFail($id);
-
-    // 🔥 tăng view mỗi lần reload / truy cập
-    $post->increment('views');
-
-    return view('post', compact('post'));
-}
-
-public function byLocation($slug)
-{
-    $location = Location::where('slug', $slug)
-        ->firstOrFail();
-
-    $posts = $location->posts()
-        ->paginate(4);
-
-    return view('location', compact('posts', 'location'));
-}
-public function admin()
-{
-    $data['posts'] = $this->getPosts();
-    return view('admin', $data);
-}
-public function createPost()
-{
-    return view('createpost');
-}
-
-public function fetchSeo(Request $request)
-{
-    $request->validate([
-        'url' => 'required|url',
-    ]);
-
-    try {
-        $response = Http::withHeaders([
-            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        ])->timeout(15)->get($request->url);
-    } catch (\Throwable $e) {
-        $err = $e->getMessage();
-
-        // nếu lỗi liên quan đến SSL (cURL 60 hoặc chứng chỉ self-signed), thử lại với verify=false
-        if (stripos($err, 'curl error 60') !== false || stripos($err, 'SSL') !== false || stripos($err, 'self-signed') !== false) {
-            try {
-                $response = Http::withOptions(['verify' => false])->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                ])->timeout(15)->get($request->url);
-            } catch (\Throwable $e2) {
-                return response()->json([
-                    'error' => 'Không thể truy cập URL đã nhập (SSL fallback thất bại): ' . $e2->getMessage(),
-                ], 422);
-            }
-        } else {
-            return response()->json([
-                'error' => 'Không thể truy cập URL đã nhập: ' . $err,
-            ], 422);
-        }
+    {
+        $post = Post::with('locations')->findOrFail($id);
+        $post->increment('views');
+        return view('post', compact('post'));
     }
 
-    if (!isset($response) || $response->failed()) {
-        return response()->json(['error' => 'Không thể truy cập URL đã nhập.'], 422);
+    public function byLocation($slug)
+    {
+        $location = Location::where('slug', $slug)->firstOrFail();
+        $posts    = $location->posts()->paginate(4);
+        return view('location', compact('posts', 'location'));
     }
 
-    $html = $response->body();
-    libxml_use_internal_errors(true);
-    $dom = new \DOMDocument();
-    if (!@$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'))) {
-        return response()->json(['error' => 'Không thể phân tích HTML của URL.'], 422);
-    }
-    $xpath = new \DOMXPath($dom);
-
-    $title = $this->getMetaValue($xpath, [
-        '//title',
-        '//meta[@property="og:title"]/@content',
-        '//meta[@name="twitter:title"]/@content',
-        '//meta[@name="title"]/@content',
-    ]);
-
-    $author = $this->getMetaValue($xpath, [
-        '//meta[@name="author"]/@content',
-        '//meta[@property="article:author"]/@content',
-        '//meta[@name="article:author"]/@content',
-        '//meta[@name="twitter:creator"]/@content',
-    ]);
-
-    $location = $this->getMetaValue($xpath, [
-        '//meta[@property="article:section"]/@content',
-        '//meta[@name="section"]/@content',
-        '//meta[@property="og:site_name"]/@content',
-        '//meta[@name="application-name"]/@content',
-    ]);
-    if (empty($location)) {
-        $location = parse_url($request->url, PHP_URL_HOST) ?: '';
+    public function admin()
+    {
+        $data['posts'] = $this->getPosts();
+        return view('admin', $data);
     }
 
-    $imageUrl = $this->getMetaValue($xpath, [
-        '//meta[@property="og:image"]/@content',
-        '//meta[@property="og:image:secure_url"]/@content',
-        '//meta[@itemprop="thumbnailUrl"]/@content',
-        '//meta[@name="twitter:image"]/@content',
-        '//meta[@name="twitter:image:src"]/@content',
-        '//meta[@name="image"]/@content',
-    ]);
-
-    $content = $this->extractMainContent($dom, $xpath);
-
-    return response()->json([
-        'title' => $title,
-        'location' => $location,
-        'author' => $author,
-        'content' => $content,
-        'image_url' => $imageUrl,
-    ]);
-}
-
-private function getMetaValue(\DOMXPath $xpath, array $queries)
-{
-    foreach ($queries as $query) {
-        $nodes = $xpath->query($query);
-        if ($nodes && $nodes->length) {
-            $value = trim($nodes->item(0)->nodeValue);
-            if ($value !== '') {
-                return $value;
-            }
-        }
-    }
-    return '';
-}
-
-private function extractMainContent(\DOMDocument $dom, \DOMXPath $xpath)
-{
-    $paragraphs = [];
-
-    $articleNodes = $xpath->query('//article//p');
-    if ($articleNodes && $articleNodes->length > 0) {
-        foreach ($articleNodes as $node) {
-            $text = trim($node->textContent);
-            if ($text !== '') {
-                $paragraphs[] = preg_replace('/\s+/', ' ', $text);
-            }
-            if (count($paragraphs) >= 6) {
-                break;
-            }
-        }
+    public function createPost()
+    {
+        return view('createpost');
     }
 
-    if (empty($paragraphs)) {
-        $mainNodes = $xpath->query('//main//p | //div[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "content")]//p | //div[contains(translate(@id, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "content")]//p | //div[contains(translate(@class, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "article")]//p');
-        if ($mainNodes && $mainNodes->length > 0) {
-            foreach ($mainNodes as $node) {
-                $text = trim($node->textContent);
-                if ($text !== '') {
-                    $paragraphs[] = preg_replace('/\s+/', ' ', $text);
+    public function fetchSeo(Request $request)
+    {
+        $request->validate(['url' => 'required|url']);
+
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                'Accept'     => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            ])->timeout(15)->get($request->url);
+        } catch (\Throwable $e) {
+            $err = $e->getMessage();
+
+            if (stripos($err, 'curl error 60') !== false || stripos($err, 'SSL') !== false || stripos($err, 'self-signed') !== false) {
+                try {
+                    $response = Http::withOptions(['verify' => false])->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+                        'Accept'     => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    ])->timeout(15)->get($request->url);
+                } catch (\Throwable $e2) {
+                    return response()->json(['error' => 'Không thể truy cập URL (SSL fallback thất bại): ' . $e2->getMessage()], 422);
                 }
-                if (count($paragraphs) >= 6) {
-                    break;
-                }
+            } else {
+                return response()->json(['error' => 'Không thể truy cập URL: ' . $err], 422);
             }
         }
-    }
 
-    if (empty($paragraphs)) {
-        $bodyParagraphs = $xpath->query('//body//p');
-        if ($bodyParagraphs && $bodyParagraphs->length > 0) {
-            foreach ($bodyParagraphs as $node) {
-                $text = trim($node->textContent);
-                if ($text !== '') {
-                    $paragraphs[] = preg_replace('/\s+/', ' ', $text);
-                }
-                if (count($paragraphs) >= 6) {
-                    break;
-                }
-            }
+        if (!isset($response) || $response->failed()) {
+            return response()->json(['error' => 'Không thể truy cập URL đã nhập.'], 422);
         }
-    }
 
-    if (empty($paragraphs)) {
-        $description = $this->getMetaValue($xpath, [
-            '//meta[@property="og:description"]/@content',
-            '//meta[@name="twitter:description"]/@content',
-            '//meta[@name="description"]/@content',
+        $html    = $response->body();
+        $crawler = new Crawler($html);
+
+        $title = $this->crawlFirst($crawler, [
+            'meta[property="og:title"]'     => 'content',
+            'meta[name="twitter:title"]'    => 'content',
+            'meta[name="title"]'            => 'content',
+            'title'                         => null,
         ]);
-        if ($description !== '') {
-            return $description;
+
+        $author = $this->crawlFirst($crawler, [
+            'meta[name="author"]'             => 'content',
+            'meta[property="article:author"]' => 'content',
+            'meta[name="twitter:creator"]'    => 'content',
+        ]);
+
+        $location = $this->crawlFirst($crawler, [
+            'meta[property="article:section"]' => 'content',
+            'meta[name="section"]'             => 'content',
+            'meta[property="og:site_name"]'    => 'content',
+            'meta[name="application-name"]'    => 'content',
+        ]);
+        if (empty($location)) {
+            $location = parse_url($request->url, PHP_URL_HOST) ?: '';
         }
+
+        $imageUrl = $this->crawlFirst($crawler, [
+            'meta[property="og:image"]'            => 'content',
+            'meta[property="og:image:secure_url"]' => 'content',
+            'meta[itemprop="thumbnailUrl"]'         => 'content',
+            'meta[name="twitter:image"]'           => 'content',
+            'meta[name="twitter:image:src"]'       => 'content',
+            'meta[name="image"]'                   => 'content',
+        ]);
+
+        $content = $this->extractMainContent($crawler);
+
+        return response()->json([
+            'title'     => $title,
+            'location'  => $location,
+            'author'    => $author,
+            'content'   => $content,
+            'image_url' => $imageUrl,
+        ]);
     }
 
-    return implode("\n\n", array_slice($paragraphs, 0, 6));
-}
+    /**
+     * Lấy giá trị đầu tiên tìm thấy từ danh sách CSS selector.
+     * $map = [ 'selector' => 'attribute' ]  (null = lấy text())
+     */
+    private function crawlFirst(Crawler $crawler, array $map): string
+    {
+        foreach ($map as $selector => $attr) {
+            try {
+                $node = $crawler->filter($selector);
+                if ($node->count() === 0) continue;
 
-private function getDashboardStats()
-{
-    return [
-        'totalPosts' => Post::count(),
-        'todayPosts' => Post::whereDate('created_at', today())->count(),
-        'totalViews' => Post::sum('views'),
-        'totalUsers' => User::where('role', 'user')->count(),
-    ];
-}
+                $value = $attr
+                    ? trim($node->first()->attr($attr) ?? '')
+                    : trim($node->first()->text(''));
 
-private function getPosts()
-{
-    return Post::latest()->get();
-}
-public function edit($id)
-{
-    $post = Post::with('locations')->findOrFail($id);
+                if ($value !== '') return $value;
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+        return '';
+    }
 
-    // convert locations thành chuỗi "A, B, C"
-    $locationString = $post->locations
-        ->pluck('name')
-        ->implode(', ');
+    /**
+     * Lấy nội dung chính dạng rich text HTML cho TinyMCE.
+     */
+    private function extractMainContent(Crawler $crawler): string
+    {
+        // Thứ tự ưu tiên — thêm selector đặc thù của từng báo vào đây
+        $contentSelectors = [
+            'article',
+            'div.article-body',
+            'div.article-content',
+            'div.article-detail',
+            'div.post-content',
+            'div.post-body',
+            'div.entry-content',
+            'div.content-detail',
+            'div.detail-content',
+            'div#article-body',
+            'div#article-content',
+            'div#post-content',
+            'main',
+        ];
 
-    return view('editpost', compact('post', 'locationString'));
-}
+        $contentNode = null;
 
-public function destroy($id)
-{
-    $post = Post::with('locations')->findOrFail($id);
+        foreach ($contentSelectors as $selector) {
+            try {
+                $node = $crawler->filter($selector);
+                if ($node->count() > 0) {
+                    $contentNode = $node->first();
+                    break;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
 
-    // nếu có file ZIP / background thì có thể xóa thêm (tuỳ bạn)
-    DB::table('posts')->where('id', $id)->delete();
+        // Không tìm thấy → fallback về og:description
+        if (!$contentNode) {
+            return $this->crawlFirst($crawler, [
+                'meta[property="og:description"]' => 'content',
+                'meta[name="description"]'        => 'content',
+            ]);
+        }
 
-    return redirect('/admin')->with('success', 'Xóa bài viết thành công!');
-}
+        // Lấy HTML thô của content node
+        $html = $contentNode->html();
+
+        // Parse lại để xóa các block rác bên trong
+        $innerCrawler = new Crawler('<div id="__wrapper__">' . $html . '</div>');
+
+        $removeSelectors = [
+            'script', 'style', 'iframe', 'ins', 'nav', 'aside',
+            '[class*="ads"]', '[class*="adsbygoogle"]', '[class*="advertisement"]',
+            '[class*="related"]', '[class*="share"]', '[class*="social"]',
+            '[class*="comment"]', '[class*="sidebar"]', '[class*="banner"]',
+            '[class*="newsletter"]', '[class*="subscription"]',
+            '[id*="ads"]', '[id*="comment"]', '[id*="sidebar"]',
+        ];
+
+        foreach ($removeSelectors as $sel) {
+            try {
+                $innerCrawler->filter($sel)->each(function (Crawler $node) {
+                    foreach ($node as $domNode) {
+                        $domNode->parentNode?->removeChild($domNode);
+                    }
+                });
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        // Lấy lại HTML sau khi đã xóa rác
+        $cleanHtml = $innerCrawler->filter('#__wrapper__')->html();
+
+        // Chỉ giữ các thẻ phù hợp với TinyMCE
+        $allowedTags = '<p><br><h1><h2><h3><h4><h5><h6>'
+                     . '<strong><em><u><b><i><s>'
+                     . '<ul><ol><li>'
+                     . '<a><img>'
+                     . '<blockquote>'
+                     . '<table><thead><tbody><tr><td><th>'
+                     . '<figure><figcaption>';
+
+        $cleanHtml = strip_tags($cleanHtml, $allowedTags);
+
+        // Xóa class, style, id, data-* rác — giữ lại src, href, alt
+        $cleanHtml = preg_replace('/\s+(class|style|id|data-[a-z-]+)="[^"]*"/i', '', $cleanHtml);
+
+        // Dọn dẹp <br> thừa liên tiếp
+        $cleanHtml = preg_replace('/(\s*<br\s*\/?>\s*){3,}/i', '<br><br>', $cleanHtml);
+
+        // Xóa <p> rỗng
+        $cleanHtml = preg_replace('/<p>\s*<\/p>/i', '', $cleanHtml);
+
+        return trim($cleanHtml);
+    }
+
+    private function getPosts()
+    {
+        return Post::latest()->get();
+    }
+
+    public function edit($id)
+    {
+        $post           = Post::with('locations')->findOrFail($id);
+        $locationString = $post->locations->pluck('name')->implode(', ');
+        return view('editpost', compact('post', 'locationString'));
+    }
+
+    public function destroy($id)
+    {
+        DB::table('posts')->where('id', $id)->delete();
+        return redirect('/admin')->with('success', 'Xóa bài viết thành công!');
+    }
 }
