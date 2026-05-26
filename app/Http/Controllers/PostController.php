@@ -20,7 +20,7 @@ class PostController extends Controller
     public function index()
     {
         $posts = Post::with('locations')
-            ->orderBy('views', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate(4);
 
         return view('home', compact('posts'));
