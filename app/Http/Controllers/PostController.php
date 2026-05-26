@@ -375,6 +375,10 @@ class PostController extends Controller
 
         $crawler = new Crawler($html);
 
+        // ======================
+        // title
+        // ======================
+
         $title = $this->crawlFirst($crawler, [
 
             'meta[property="og:title"]' => 'content',
@@ -382,23 +386,91 @@ class PostController extends Controller
             'title' => null,
         ]);
 
+        // ======================
+        // author
+        // ======================
+
         $author = $this->crawlFirst($crawler, [
 
+            // meta
             'meta[name="author"]' => 'content',
             'meta[property="article:author"]' => 'content',
+
+            // VnExpress
+            '.author_mail' => null,
+            '.author' => null,
+
+            // Vietnamnet
+            '.ArticleAuthor' => null,
+            '.vnn-author' => null,
         ]);
+
+        if (!$author) {
+
+            try {
+
+                $authorNode = $crawler->filter(
+
+                    '.author_mail,
+                     .author,
+                     .ArticleAuthor,
+                     .vnn-author'
+                );
+
+                if ($authorNode->count() > 0) {
+
+                    $author = trim(
+                        $authorNode->first()->text()
+                    );
+                }
+
+            } catch (\Throwable $e) {
+            }
+        }
+
+        if (!$author || strlen(trim($author)) < 2) {
+
+            $author = 'Sưu tầm';
+        }
+
+        // ======================
+        // location
+        // ======================
 
         $location = $this->crawlFirst($crawler, [
 
+            // category/meta
             'meta[property="article:section"]' => 'content',
             'meta[name="section"]' => 'content',
+
+            // VnExpress
+            '.breadcrumb li:last-child' => null,
+            '.box-breadcrumb a:last-child' => null,
+
+            // Vietnamnet
+            '.bread-crumb-detail__item:last-child' => null,
+            '.breadcrumb-box__link:last-child' => null,
         ]);
+
+        // fallback
+        if (!$location || strlen(trim($location)) < 2) {
+
+            $location = 'Thế giới';
+        }
+
+        // ======================
+        // image
+        // ======================
 
         $imageUrl = $this->crawlFirst($crawler, [
 
             'meta[property="og:image"]' => 'content',
             'meta[name="twitter:image"]' => 'content',
         ]);
+
+        // ======================
+        // content
+        // ======================
 
         $content = $this->extractMainContent(
             $crawler,
@@ -483,7 +555,6 @@ class PostController extends Controller
 
                 $src = null;
 
-                // lazy image
                 foreach ($lazyAttrs as $attr) {
 
                     if (
@@ -590,7 +661,7 @@ class PostController extends Controller
     }
 
     // =========================
-    // EXTRACT MAIN CONTENT
+    // EXTRACT CONTENT
     // =========================
 
     private function extractMainContent(
@@ -626,7 +697,6 @@ class PostController extends Controller
 
         $contentNode = null;
 
-        // ưu tiên known selector
         foreach ($contentSelectors as $selector) {
 
             try {
