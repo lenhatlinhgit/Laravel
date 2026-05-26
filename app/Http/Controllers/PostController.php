@@ -252,6 +252,7 @@ class PostController extends Controller
         }
 
         $html    = $response->body();
+        $baseUrl = $request->url;
         $crawler = new Crawler($html);
 
         $title = $this->crawlFirst($crawler, [
@@ -286,7 +287,7 @@ class PostController extends Controller
             'meta[name="image"]'                   => 'content',
         ]);
 
-        $content = $this->extractMainContent($crawler);
+        $content = $this->extractMainContent($crawler, $baseUrl);
 
         return response()->json([
             'title'     => $title,
@@ -299,7 +300,6 @@ class PostController extends Controller
 
     /**
      * Lấy giá trị đầu tiên tìm thấy từ danh sách CSS selector.
-     * $map = [ 'selector' => 'attribute' ]  (null = lấy text())
      */
     private function crawlFirst(Crawler $crawler, array $map): string
     {
@@ -321,11 +321,73 @@ class PostController extends Controller
     }
 
     /**
+     * Xử lý ảnh trong HTML:
+     * 1. Ưu tiên data-src / data-lazy / data-original hơn src (lấy ảnh gốc thay vì thumbnail)
+     * 2. Chuyển src tương đối → tuyệt đối
+     * 3. Gán width="100%" cho tất cả ảnh
+     */
+    private function fixImages(string $html, string $baseUrl): string
+    {
+        $parsed = parse_url($baseUrl);
+        $origin = $parsed['scheme'] . '://' . $parsed['host'];
+
+        // Bước 1 + 3: xử lý từng thẻ <img>
+        $html = preg_replace_callback(
+            '/<img([^>]*?)>/i',
+            function ($matches) use ($origin) {
+                $tag = $matches[1];
+
+                // Ưu tiên data-src hơn src để lấy ảnh gốc (không phải thumbnail)
+                $lazyAttrs = ['data-src', 'data-lazy', 'data-original', 'data-url', 'data-image'];
+                $newSrc    = null;
+
+                foreach ($lazyAttrs as $attr) {
+                    if (preg_match('/' . preg_quote($attr, '/') . '=["\']([^"\']+)["\']/i', $tag, $m)) {
+                        $val = trim($m[1]);
+                        if ($val !== '') {
+                            $newSrc = $val;
+                            break;
+                        }
+                    }
+                }
+
+                // Nếu không có data-src thì lấy src hiện tại
+                if (!$newSrc) {
+                    if (preg_match('/\bsrc=["\']([^"\']+)["\']/i', $tag, $m)) {
+                        $newSrc = trim($m[1]);
+                    }
+                }
+
+                if (!$newSrc) {
+                    return ''; // Không có src nào → bỏ thẻ img
+                }
+
+                // Bước 2: src tương đối → tuyệt đối
+                if (str_starts_with($newSrc, '//')) {
+                    $newSrc = 'https:' . $newSrc;
+                } elseif (!preg_match('/^https?:\/\//i', $newSrc)) {
+                    $newSrc = $origin . '/' . ltrim($newSrc, '/');
+                }
+
+                // Bước 3: trả về thẻ img gọn, width 100%
+                $alt = '';
+                if (preg_match('/\balt=["\']([^"\']*)["\']/', $tag, $m)) {
+                    $alt = ' alt="' . htmlspecialchars($m[1], ENT_QUOTES) . '"';
+                }
+
+                return '<img src="' . $newSrc . '"' . $alt . ' width="100%" style="height:auto;">';
+            },
+            $html
+        );
+
+        return $html;
+    }
+
+    /**
      * Lấy nội dung chính dạng rich text HTML cho TinyMCE.
      */
-    private function extractMainContent(Crawler $crawler): string
+    private function extractMainContent(Crawler $crawler, string $baseUrl): string
     {
-        // Thứ tự ưu tiên — thêm selector đặc thù của từng báo vào đây
         $contentSelectors = [
             'article',
             'div.article-body',
@@ -356,7 +418,6 @@ class PostController extends Controller
             }
         }
 
-        // Không tìm thấy → fallback về og:description
         if (!$contentNode) {
             return $this->crawlFirst($crawler, [
                 'meta[property="og:description"]' => 'content',
@@ -364,10 +425,9 @@ class PostController extends Controller
             ]);
         }
 
-        // Lấy HTML thô của content node
         $html = $contentNode->html();
 
-        // Parse lại để xóa các block rác bên trong
+        // Xóa node rác
         $innerCrawler = new Crawler('<div id="__wrapper__">' . $html . '</div>');
 
         $removeSelectors = [
@@ -391,8 +451,10 @@ class PostController extends Controller
             }
         }
 
-        // Lấy lại HTML sau khi đã xóa rác
         $cleanHtml = $innerCrawler->filter('#__wrapper__')->html();
+
+        // Xử lý ảnh TRƯỚC khi strip_tags
+        $cleanHtml = $this->fixImages($cleanHtml, $baseUrl);
 
         // Chỉ giữ các thẻ phù hợp với TinyMCE
         $allowedTags = '<p><br><h1><h2><h3><h4><h5><h6>'
@@ -405,10 +467,10 @@ class PostController extends Controller
 
         $cleanHtml = strip_tags($cleanHtml, $allowedTags);
 
-        // Xóa class, style, id, data-* rác — giữ lại src, href, alt
-        $cleanHtml = preg_replace('/\s+(class|style|id|data-[a-z-]+)="[^"]*"/i', '', $cleanHtml);
+        // Xóa class, style, id, data-* rác — giữ src, href, alt, width
+        $cleanHtml = preg_replace('/\s+(class|id|data-[a-z-]+)="[^"]*"/i', '', $cleanHtml);
 
-        // Dọn dẹp <br> thừa liên tiếp
+        // Dọn dẹp <br> thừa
         $cleanHtml = preg_replace('/(\s*<br\s*\/?>\s*){3,}/i', '<br><br>', $cleanHtml);
 
         // Xóa <p> rỗng
