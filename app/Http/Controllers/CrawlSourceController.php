@@ -13,29 +13,32 @@ class CrawlSourceController extends Controller
         return view('crawlsources', compact('sources'));
     }
 
+    // API endpoint cho polling
+    public function data()
+    {
+        $sources = CrawlSource::orderBy('created_at', 'desc')->get();
+
+        $hash = md5($sources->map(function ($s) {
+            return $s->id . $s->is_active . $s->is_done . $s->last_run_at;
+        })->join('|'));
+
+        return response()->json([
+            'hash'    => $hash,
+            'sources' => $sources,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $this->validateSource($request);
-
         CrawlSource::create($this->extractData($request));
-
         return redirect('/crawl-sources')->with('success', 'Thêm nguồn thành công');
-    }
-
-    public function update(Request $request, $id)
-    {
-        $this->validateSource($request);
-
-        CrawlSource::findOrFail($id)->update($this->extractData($request));
-
-        return redirect('/crawl-sources')->with('success', 'Cập nhật thành công');
     }
 
     public function toggleActive($id)
     {
         $source = CrawlSource::findOrFail($id);
         $source->update(['is_active' => !$source->is_active]);
-
         return redirect('/crawl-sources')
             ->with('success', $source->is_active ? 'Đã bật nguồn' : 'Đã tắt nguồn');
     }
@@ -99,7 +102,6 @@ class CrawlSourceController extends Controller
         }
 
         if ($request->mode === 'daily_times') {
-            // Ghép mảng giờ thành chuỗi "06:00,12:00,20:00"
             $times = array_filter(
                 array_map('trim', explode(',', $request->daily_times))
             );

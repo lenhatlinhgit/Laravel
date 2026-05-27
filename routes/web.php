@@ -46,31 +46,24 @@ Route::get('/home', [PostController::class, 'index'])
 | ADMIN AREA
 |--------------------------------------------------------------------------
 */
-
-// Dashboard
 Route::get('/admin', [PostController::class, 'admin'])
     ->middleware('checkrole:admin');
 
-// Create post page
 Route::get('/createpost', [PostController::class, 'createPost'])
     ->middleware('checkrole:admin');
 
-// Upload post
 Route::post('/upload', [PostController::class, 'upload'])
     ->middleware('checkrole:admin');
 
-// Link Preview endpoint
 Route::post('/fetch-seo', [PostController::class, 'fetchSeo'])
     ->middleware('checkrole:admin');
 
-// Change password
 Route::get('/changepassword', [AuthController::class, 'showChangePassword'])
     ->middleware('checkrole:admin');
 
 Route::post('/changepassword', [AuthController::class, 'changePassword'])
     ->middleware('checkrole:admin');
 
-// Upload ảnh từ TinyMCE
 Route::post('/editor/image', [PostController::class, 'uploadImage'])
     ->middleware('checkrole:admin');
 
@@ -82,10 +75,10 @@ Route::post('/editor/image', [PostController::class, 'uploadImage'])
 Route::get('/crawl-sources', [CrawlSourceController::class, 'index'])
     ->middleware('checkrole:admin');
 
-Route::post('/crawl-sources', [CrawlSourceController::class, 'store'])
+Route::get('/crawl-sources/data', [CrawlSourceController::class, 'data'])
     ->middleware('checkrole:admin');
 
-Route::put('/crawl-sources/{id}', [CrawlSourceController::class, 'update'])
+Route::post('/crawl-sources', [CrawlSourceController::class, 'store'])
     ->middleware('checkrole:admin');
 
 Route::post('/crawl-sources/{id}/toggle', [CrawlSourceController::class, 'toggleActive'])
