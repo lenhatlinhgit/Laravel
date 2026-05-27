@@ -161,9 +161,9 @@ class PostController extends Controller
         $postId = DB::table('posts')
             ->insertGetId([
 
-                'title' => $request->title,
-                'author' => $request->author,
-                'content' => clean($request->content),
+                'title'      => $request->title,
+                'author'     => $request->author,
+                'content'    => clean($request->content),
                 'background' => $bgPath,
                 'dateposted' => now(),
 
@@ -204,7 +204,7 @@ class PostController extends Controller
             }
 
             DB::table('post_locations')->insert([
-                'post_id' => $postId,
+                'post_id'     => $postId,
                 'location_id' => $locationId,
             ]);
         }
@@ -239,16 +239,16 @@ class PostController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
+            'title'    => 'required|string|max:255',
             'location' => 'required|string|max:255',
-            'author' => 'required|string|max:255',
-            'content' => 'required|string',
+            'author'   => 'required|string|max:255',
+            'content'  => 'required|string',
         ]);
 
         $data = [
 
-            'title' => $request->title,
-            'author' => $request->author,
+            'title'   => $request->title,
+            'author'  => $request->author,
             'content' => clean($request->content),
 
             'updated_at' => now(),
@@ -312,7 +312,7 @@ class PostController extends Controller
             }
 
             DB::table('post_locations')->insert([
-                'post_id' => $id,
+                'post_id'     => $id,
                 'location_id' => $locationId,
             ]);
         }
@@ -336,7 +336,7 @@ class PostController extends Controller
     }
 
     // =========================
-    // FETCH SEO
+    // FETCH SEO (dùng cho form tạo bài thủ công)
     // =========================
 
     public function fetchSeo(Request $request)
@@ -347,15 +347,7 @@ class PostController extends Controller
 
         try {
 
-            $response = Http::withHeaders([
-                'User-Agent' => 'Mozilla/5.0',
-                'Accept' => 'text/html'
-            ])
-            ->withOptions([
-                'verify' => false
-            ])
-            ->timeout(20)
-            ->get($request->url);
+            $data = $this->fetchSeoData($request->url);
 
         } catch (\Throwable $e) {
 
@@ -364,26 +356,39 @@ class PostController extends Controller
             ], 422);
         }
 
-        if ($response->failed()) {
+        return response()->json($data);
+    }
 
-            return response()->json([
-                'error' => 'URL lỗi'
-            ], 422);
+    // =========================
+    // FETCH SEO DATA (dùng cho cả form và CrawlNewsCommand)
+    // =========================
+
+    public function fetchSeoData(string $url): array
+    {
+        $response = Http::withHeaders([
+            'User-Agent' => 'Mozilla/5.0',
+            'Accept'     => 'text/html',
+        ])
+        ->withOptions([
+            'verify' => false,
+        ])
+        ->timeout(20)
+        ->get($url);
+
+        if ($response->failed()) {
+            throw new \Exception('URL lỗi: ' . $url);
         }
 
-        $html = $response->body();
-
-        $crawler = new Crawler($html);
+        $crawler = new Crawler($response->body());
 
         // ======================
         // title
         // ======================
 
         $title = $this->crawlFirst($crawler, [
-
-            'meta[property="og:title"]' => 'content',
+            'meta[property="og:title"]'  => 'content',
             'meta[name="twitter:title"]' => 'content',
-            'title' => null,
+            'title'                      => null,
         ]);
 
         // ======================
@@ -393,16 +398,16 @@ class PostController extends Controller
         $author = $this->crawlFirst($crawler, [
 
             // meta
-            'meta[name="author"]' => 'content',
+            'meta[name="author"]'             => 'content',
             'meta[property="article:author"]' => 'content',
 
             // VnExpress
             '.author_mail' => null,
-            '.author' => null,
+            '.author'      => null,
 
             // Vietnamnet
             '.ArticleAuthor' => null,
-            '.vnn-author' => null,
+            '.vnn-author'    => null,
         ]);
 
         if (!$author) {
@@ -410,7 +415,6 @@ class PostController extends Controller
             try {
 
                 $authorNode = $crawler->filter(
-
                     '.author_mail,
                      .author,
                      .ArticleAuthor,
@@ -418,7 +422,6 @@ class PostController extends Controller
                 );
 
                 if ($authorNode->count() > 0) {
-
                     $author = trim(
                         $authorNode->first()->text()
                     );
@@ -429,7 +432,6 @@ class PostController extends Controller
         }
 
         if (!$author || strlen(trim($author)) < 2) {
-
             $author = 'Sưu tầm';
         }
 
@@ -437,60 +439,52 @@ class PostController extends Controller
         // location
         // ======================
 
-$location = $this->crawlFirst($crawler, [
+        $location = $this->crawlFirst($crawler, [
 
-    // meta
-    'meta[property="article:section"]' => 'content',
-    'meta[name="section"]' => 'content',
+            // meta
+            'meta[property="article:section"]' => 'content',
+            'meta[name="section"]'             => 'content',
 
-    // VnExpress mới
-    '.header-title .parent-cate' => null,
-    '.breadcrumb li a' => null,
+            // VnExpress mới
+            '.header-title .parent-cate' => null,
+            '.breadcrumb li a'           => null,
 
-    // VnExpress cũ
-    '.box-breadcrumb a' => null,
+            // VnExpress cũ
+            '.box-breadcrumb a' => null,
 
-    // Thanh Niên
-    '.breadcrumb__item a' => null,
-    '.breadcrumb__item' => null,
+            // Thanh Niên
+            '.breadcrumb__item a' => null,
+            '.breadcrumb__item'   => null,
 
-    // =====================
-    // THAY Vietnamnet / Dân Trí -> Người Lao Động
-    // =====================
-    '.nld-breadcrumb a:last-child' => null,
-    '.nld-breadcrumb a' => null,
-    '.breadcrumb-nld a:last-child' => null,
-    '.breadcrumb-nld a' => null,
-]);
-
+            // Người Lao Động
+            '.nld-breadcrumb a:last-child' => null,
+            '.nld-breadcrumb a'            => null,
+            '.breadcrumb-nld a:last-child' => null,
+            '.breadcrumb-nld a'            => null,
+        ]);
 
         // ======================
         // image
         // ======================
 
         $imageUrl = $this->crawlFirst($crawler, [
-
-            'meta[property="og:image"]' => 'content',
-            'meta[name="twitter:image"]' => 'content',
+            'meta[property="og:image"]'    => 'content',
+            'meta[name="twitter:image"]'   => 'content',
         ]);
 
         // ======================
         // content
         // ======================
 
-        $content = $this->extractMainContent(
-            $crawler,
-            $request->url
-        );
+        $content = $this->extractMainContent($crawler, $url);
 
-        return response()->json([
-
-            'title' => $title,
-            'author' => $author,
-            'location' => $location,
+        return [
+            'title'     => $title,
+            'author'    => $author,
+            'location'  => $location,
             'image_url' => $imageUrl,
-            'content' => $content,
-        ]);
+            'content'   => $content,
+        ];
     }
 
     // =========================
@@ -531,11 +525,8 @@ $location = $this->crawlFirst($crawler, [
     // FIX IMAGE
     // =========================
 
-    private function fixImages(
-        $html,
-        $baseUrl
-    ) {
-
+    private function fixImages($html, $baseUrl)
+    {
         $parsed = parse_url($baseUrl);
 
         $origin =
@@ -552,7 +543,6 @@ $location = $this->crawlFirst($crawler, [
                 $tag = $matches[1];
 
                 $lazyAttrs = [
-
                     'data-src',
                     'data-original',
                     'data-lazy',
@@ -565,7 +555,7 @@ $location = $this->crawlFirst($crawler, [
 
                     if (
                         preg_match(
-                            '/'.$attr.'=["\']([^"\']+)["\']/i',
+                            '/' . $attr . '=["\']([^"\']+)["\']/i',
                             $tag,
                             $m
                         )
@@ -575,14 +565,9 @@ $location = $this->crawlFirst($crawler, [
 
                         if (
                             !empty($candidate)
-                            && !str_starts_with(
-                                $candidate,
-                                'data:image'
-                            )
+                            && !str_starts_with($candidate, 'data:image')
                         ) {
-
                             $src = $candidate;
-
                             break;
                         }
                     }
@@ -601,13 +586,7 @@ $location = $this->crawlFirst($crawler, [
 
                         $candidate = trim($m[1]);
 
-                        if (
-                            !str_starts_with(
-                                $candidate,
-                                'data:image'
-                            )
-                        ) {
-
+                        if (!str_starts_with($candidate, 'data:image')) {
                             $src = $candidate;
                         }
                     }
@@ -622,15 +601,9 @@ $location = $this->crawlFirst($crawler, [
 
                     $src = 'https:' . $src;
 
-                } elseif (
-                    !preg_match(
-                        '/^https?:\/\//i',
-                        $src
-                    )
-                ) {
+                } elseif (!preg_match('/^https?:\/\//i', $src)) {
 
-                    $src = $origin . '/'
-                        . ltrim($src, '/');
+                    $src = $origin . '/' . ltrim($src, '/');
                 }
 
                 // alt
@@ -643,21 +616,10 @@ $location = $this->crawlFirst($crawler, [
                         $m
                     )
                 ) {
-
-                    $alt = htmlspecialchars(
-                        $m[1],
-                        ENT_QUOTES
-                    );
+                    $alt = htmlspecialchars($m[1], ENT_QUOTES);
                 }
 
-                return '
-                    <img
-                        src="'.$src.'"
-                        alt="'.$alt.'"
-                        width="100%"
-                        style="height:auto;"
-                    >
-                ';
+                return '<img src="' . $src . '" alt="' . $alt . '" width="100%" style="height:auto;">';
             },
 
             $html
@@ -711,14 +673,10 @@ $location = $this->crawlFirst($crawler, [
 
                 if ($node->count() > 0) {
 
-                    $textLength = strlen(
-                        trim($node->text())
-                    );
+                    $textLength = strlen(trim($node->text()));
 
                     if ($textLength > 500) {
-
                         $contentNode = $node->first();
-
                         break;
                     }
                 }
@@ -730,44 +688,31 @@ $location = $this->crawlFirst($crawler, [
         // fallback auto detect
         if (!$contentNode) {
 
-            $bestNode = null;
-
+            $bestNode  = null;
             $bestScore = 0;
 
-            $crawler->filter(
-                'article, div, section'
-            )->each(function ($node)
-            use (&$bestNode, &$bestScore) {
+            $crawler->filter('article, div, section')
+                ->each(function ($node) use (&$bestNode, &$bestScore) {
 
-                try {
+                    try {
 
-                    $textLength = strlen(
-                        trim($node->text())
-                    );
+                        $textLength = strlen(trim($node->text()));
+                        $pCount     = $node->filter('p')->count();
+                        $imgCount   = $node->filter('img')->count();
 
-                    $pCount = $node
-                        ->filter('p')
-                        ->count();
+                        $score =
+                            $textLength
+                            + ($pCount * 200)
+                            + ($imgCount * 100);
 
-                    $imgCount = $node
-                        ->filter('img')
-                        ->count();
+                        if ($score > $bestScore) {
+                            $bestScore = $score;
+                            $bestNode  = $node;
+                        }
 
-                    $score =
-                        $textLength
-                        + ($pCount * 200)
-                        + ($imgCount * 100);
-
-                    if ($score > $bestScore) {
-
-                        $bestScore = $score;
-
-                        $bestNode = $node;
+                    } catch (\Throwable $e) {
                     }
-
-                } catch (\Throwable $e) {
-                }
-            });
+                });
 
             $contentNode = $bestNode;
         }
@@ -779,29 +724,22 @@ $location = $this->crawlFirst($crawler, [
         $html = $contentNode->html();
 
         $innerCrawler = new Crawler(
-            '<div id="wrapper">'
-            . $html .
-            '</div>'
+            '<div id="wrapper">' . $html . '</div>'
         );
 
         // remove rác
         $removeSelectors = [
-
             'script',
             'style',
             'nav',
             'aside',
-
             '[class*="ads"]',
             '[class*="banner"]',
             '[class*="google"]',
-
             '[class*="related"]',
             '[class*="Related"]',
             '[class*="relate"]',
-
             '[class*="comment"]',
-
             '[class*="social"]',
             '[class*="share"]',
         ];
@@ -810,15 +748,10 @@ $location = $this->crawlFirst($crawler, [
 
             try {
 
-                $innerCrawler
-                    ->filter($selector)
+                $innerCrawler->filter($selector)
                     ->each(function ($node) {
-
                         foreach ($node as $domNode) {
-
-                            $domNode
-                                ->parentNode
-                                ?->removeChild($domNode);
+                            $domNode->parentNode?->removeChild($domNode);
                         }
                     });
 
@@ -826,49 +759,29 @@ $location = $this->crawlFirst($crawler, [
             }
         }
 
-        $cleanHtml = $innerCrawler
-            ->filter('#wrapper')
-            ->html();
+        $cleanHtml = $innerCrawler->filter('#wrapper')->html();
 
         // fix image
-        $cleanHtml = $this->fixImages(
-            $cleanHtml,
-            $baseUrl
-        );
+        $cleanHtml = $this->fixImages($cleanHtml, $baseUrl);
 
         // allow rich text
         $allowedTags =
-
             '<p><br>'
-
             . '<h1><h2><h3><h4><h5><h6>'
-
             . '<strong><em><u><b><i>'
-
             . '<ul><ol><li>'
-
             . '<blockquote>'
-
             . '<a>'
-
             . '<img>'
-
             . '<table><thead><tbody><tr><td><th>'
-
             . '<figure><figcaption>';
 
-        $cleanHtml = strip_tags(
-            $cleanHtml,
-            $allowedTags
-        );
+        $cleanHtml = strip_tags($cleanHtml, $allowedTags);
 
         // remove attribute rác
         $cleanHtml = preg_replace(
-
             '/\s+(class|id|data-[a-z-]+)="[^"]*"/i',
-
             '',
-
             $cleanHtml
         );
 

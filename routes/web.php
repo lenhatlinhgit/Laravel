@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CrawlSourceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,15 +59,39 @@ Route::get('/createpost', [PostController::class, 'createPost'])
 Route::post('/upload', [PostController::class, 'upload'])
     ->middleware('checkrole:admin');
 
-// Link Preview endpoint (fetch metadata from URL for create post)
+// Link Preview endpoint
 Route::post('/fetch-seo', [PostController::class, 'fetchSeo'])
     ->middleware('checkrole:admin');
 
-// Change password page
+// Change password
 Route::get('/changepassword', [AuthController::class, 'showChangePassword'])
     ->middleware('checkrole:admin');
 
 Route::post('/changepassword', [AuthController::class, 'changePassword'])
+    ->middleware('checkrole:admin');
+
+// Upload ảnh từ TinyMCE
+Route::post('/editor/image', [PostController::class, 'uploadImage'])
+    ->middleware('checkrole:admin');
+
+/*
+|--------------------------------------------------------------------------
+| CRAWL SOURCES
+|--------------------------------------------------------------------------
+*/
+Route::get('/crawl-sources', [CrawlSourceController::class, 'index'])
+    ->middleware('checkrole:admin');
+
+Route::post('/crawl-sources', [CrawlSourceController::class, 'store'])
+    ->middleware('checkrole:admin');
+
+Route::put('/crawl-sources/{id}', [CrawlSourceController::class, 'update'])
+    ->middleware('checkrole:admin');
+
+Route::post('/crawl-sources/{id}/toggle', [CrawlSourceController::class, 'toggleActive'])
+    ->middleware('checkrole:admin');
+
+Route::delete('/crawl-sources/{id}', [CrawlSourceController::class, 'destroy'])
     ->middleware('checkrole:admin');
 
 /*
@@ -81,8 +106,3 @@ Route::get('/post/{id}/edit', [PostController::class, 'edit']);
 Route::post('/post/{id}/update', [PostController::class, 'update']);
 
 Route::delete('/post/{id}/delete', [PostController::class, 'destroy']);
-
-// Upload ảnh từ TinyMCE editor
-Route::post('/editor/image', [PostController::class, 'uploadImage'])
-    ->middleware('checkrole:admin');
-Route::post('/fetch-seo', [PostController::class, 'fetchSeo']);
