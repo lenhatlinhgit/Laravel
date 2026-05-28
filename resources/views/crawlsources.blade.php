@@ -6,16 +6,13 @@
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 <style>
     .crawl-wrap {
-    display: flex;
-    gap: 20px;
-    flex: 1;
-    overflow: hidden;
-    margin-bottom: 50px;
-}
+        display: flex;
+        gap: 20px;
+        flex: 1;
+        overflow: hidden;
+        margin-bottom: 50px;
+    }
 
-    /* ========================
-       FORM
-    ======================== */
     .crawl-form-box {
         width: 340px;
         flex-shrink: 0;
@@ -149,9 +146,6 @@
 
     .btn-submit:hover { background: #333; }
 
-    /* ========================
-       TABLE
-    ======================== */
     .crawl-table-box {
         flex: 1;
         overflow-y: auto;
@@ -191,12 +185,7 @@
     .badge-done { background: #e8eaf6; color: #3949ab; }
     .badge-exp  { background: #fff3e0; color: #e65100; }
 
-    .mode-badge {
-        font-size: 11px;
-        padding: 2px 8px;
-        background: #f1f1f1;
-        color: #555;
-    }
+    .mode-badge { font-size: 11px; padding: 2px 8px; background: #f1f1f1; color: #555; }
 
     .url-cell {
         max-width: 160px;
@@ -209,44 +198,15 @@
 
     .schedule-detail { font-size: 11px; color: #888; margin-top: 2px; }
     .last-run        { font-size: 11px; color: #aaa; }
+    .action-btns     { display: flex; gap: 6px; }
 
-    .action-btns { display: flex; gap: 6px; }
-
-    .btn-toggle-on {
-        padding: 4px 10px; font-size: 12px;
-        background: #fce8e8; color: #c62828;
-        border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
-    }
-    .btn-toggle-off {
-        padding: 4px 10px; font-size: 12px;
-        background: #e6f4ea; color: #2e7d32;
-        border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
-    }
-    .btn-delete {
-        padding: 4px 10px; font-size: 12px;
-        background: #1f1717; color: #fff;
-        border: none; cursor: pointer; font-family: 'DM Sans', sans-serif;
-    }
+    .btn-toggle-on  { padding: 4px 10px; font-size: 12px; background: #fce8e8; color: #c62828; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .btn-toggle-off { padding: 4px 10px; font-size: 12px; background: #e6f4ea; color: #2e7d32; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .btn-delete     { padding: 4px 10px; font-size: 12px; background: #1f1717; color: #fff; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .btn-delete:hover { background: #333; }
 
-    .alert-success {
-        background: #e6f4ea; color: #2e7d32;
-        padding: 10px 14px; font-size: 13px; margin-bottom: 14px;
-    }
-    .alert-error {
-        background: #fce8e8; color: #c62828;
-        padding: 10px 14px; font-size: 13px; margin-bottom: 14px;
-    }
-
-    .sync-dot {
-        display: inline-block;
-        width: 7px; height: 7px;
-        border-radius: 50%;
-        background: #aaa;
-        vertical-align: middle;
-        transition: background 0.3s;
-    }
-    .sync-dot.active { background: #2e7d32; }
+    .alert-success { background: #e6f4ea; color: #2e7d32; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
+    .alert-error   { background: #fce8e8; color: #c62828; padding: 10px 14px; font-size: 13px; margin-bottom: 14px; }
 </style>
 @endsection
 
@@ -264,11 +224,7 @@
 
 <div class="crawl-wrap">
 
-    {{-- ========================
-         FORM
-    ======================== --}}
     <div class="crawl-form-box">
-
         <h3>➕ Thêm nguồn mới</h3>
 
         <form action="/crawl-sources" method="POST" id="crawl-form">
@@ -294,71 +250,48 @@
             <div class="mode-section" id="section-interval">
                 <label>Chạy mỗi (phút)</label>
                 <input type="number" name="interval_minutes" placeholder="VD: 60" min="1">
-
                 <div class="expires-row">
                     <label>Thời hạn</label>
                     <div class="radio-group">
-                        <label>
-                            <input type="radio" name="expires_type_interval" value="forever"
-                                checked onchange="toggleExpires('interval', this.value)">
-                            Vĩnh viễn
-                        </label>
-                        <label>
-                            <input type="radio" name="expires_type_interval" value="limited"
-                                onchange="toggleExpires('interval', this.value)">
-                            Có hạn
-                        </label>
+                        <label><input type="radio" name="expires_type_interval" value="forever" checked onchange="toggleExpires('interval', this.value)"> Vô thời hạn</label>
+                        <label><input type="radio" name="expires_type_interval" value="limited" onchange="toggleExpires('interval', this.value)"> Có hạn</label>
                     </div>
                     <input type="datetime-local" name="expires_at" id="expires-interval"
-                        style="display:none; margin-top:6px;">
+                        style="display:none; margin-top:6px;" disabled>
                 </div>
             </div>
 
             {{-- CHẾ ĐỘ 2: DAILY TIMES --}}
             <div class="mode-section" id="section-daily" style="display:none">
-                <label>Giờ chạy trong ngày</label>
+                <label>Giờ chạy trong ngày (giờ VN)</label>
                 <div class="times-wrap" id="times-tags"></div>
                 <input type="hidden" name="daily_times" id="input-daily-times">
                 <div class="add-time-row">
                     <input type="time" id="time-picker">
                     <button type="button" class="btn-add-time" onclick="addTime()">+ Thêm</button>
                 </div>
-
                 <div class="expires-row">
                     <label>Thời hạn</label>
                     <div class="radio-group">
-                        <label>
-                            <input type="radio" name="expires_type_daily" value="forever"
-                                checked onchange="toggleExpires('daily', this.value)">
-                            Vĩnh viễn
-                        </label>
-                        <label>
-                            <input type="radio" name="expires_type_daily" value="limited"
-                                onchange="toggleExpires('daily', this.value)">
-                            Có hạn
-                        </label>
+                        <label><input type="radio" name="expires_type_daily" value="forever" checked onchange="toggleExpires('daily', this.value)"> Vô thời hạn</label>
+                        <label><input type="radio" name="expires_type_daily" value="limited" onchange="toggleExpires('daily', this.value)"> Có hạn</label>
                     </div>
                     <input type="datetime-local" name="expires_at" id="expires-daily"
-                        style="display:none; margin-top:6px;">
+                        style="display:none; margin-top:6px;" disabled>
                 </div>
             </div>
 
             {{-- CHẾ ĐỘ 3: ONCE --}}
             <div class="mode-section" id="section-once" style="display:none">
-                <label>Ngày giờ chạy</label>
-                <input type="datetime-local" name="run_at">
-                <div style="font-size:11px; color:#aaa; margin-top:4px;">
-                    Chạy đúng 1 lần vào thời điểm này rồi tự kết thúc.
-                </div>
+                <label>Ngày giờ chạy (giờ VN)</label>
+                <input type="datetime-local" name="run_at" id="input-run-at">
+                <div style="font-size:11px; color:#aaa; margin-top:4px;">Chạy đúng 1 lần vào thời điểm này rồi tự kết thúc.</div>
             </div>
 
             <button type="submit" class="btn-submit">Thêm nguồn</button>
         </form>
     </div>
 
-    {{-- ========================
-         TABLE
-    ======================== --}}
     <div class="crawl-table-box">
         <table>
             <thead>
@@ -391,11 +324,11 @@
                     <td>{{ $source->max_posts }} bài</td>
                     <td>
                         @if($source->mode === 'once')
-                            {{ $source->run_at ? $source->run_at->format('d/m/Y H:i') : '—' }}
+                            {{ $source->run_at ? $source->run_at->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') : '—' }}
                         @elseif($source->expires_at)
-                            {{ $source->expires_at->format('d/m/Y H:i') }}
+                            {{ $source->expires_at->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') }}
                         @else
-                            Vĩnh viễn
+                            Vô thời hạn
                         @endif
                     </td>
                     <td>
@@ -410,19 +343,17 @@
                         @endif
                     </td>
                     <td class="last-run">
-                        {{ $source->last_run_at ? $source->last_run_at->format('d/m/Y H:i') : 'Chưa chạy' }}
+                        {{ $source->last_run_at ? $source->last_run_at->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y H:i') : 'Chưa chạy' }}
                     </td>
                     <td>
                         <div class="action-btns">
                             <form action="/crawl-sources/{{ $source->id }}/toggle" method="POST">
                                 @csrf
-                                <button type="submit"
-                                    class="{{ $source->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}">
+                                <button type="submit" class="{{ $source->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}">
                                     {{ $source->is_active ? 'Tắt' : 'Bật' }}
                                 </button>
                             </form>
-                            <form action="/crawl-sources/{{ $source->id }}" method="POST"
-                                onsubmit="return confirm('Xóa nguồn này?')">
+                            <form action="/crawl-sources/{{ $source->id }}" method="POST" onsubmit="return confirm('Xóa nguồn này?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn-delete">Xóa</button>
@@ -462,7 +393,7 @@
     function formatDuration(s) {
         if (s.mode === 'once') return s.run_at ? formatDateTime(s.run_at) : '—';
         if (s.expires_at)      return formatDateTime(s.expires_at);
-        return 'Vĩnh viễn';
+        return 'Vô thời hạn';
     }
 
     function formatStatus(s) {
@@ -476,10 +407,12 @@
     function formatDateTime(dt) {
         if (!dt) return '—';
         const d = new Date(dt);
-        return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString('vi-VN') + ' '
+             + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     }
 
     function renderRow(s) {
+        const token = document.querySelector('meta[name=csrf-token]')?.content || '';
         return `
         <tr>
             <td>${s.name}</td>
@@ -492,14 +425,13 @@
             <td>
                 <div class="action-btns">
                     <form action="/crawl-sources/${s.id}/toggle" method="POST">
-                        <input type="hidden" name="_token" value="${document.querySelector('meta[name=csrf-token]')?.content || ''}">
+                        <input type="hidden" name="_token" value="${token}">
                         <button type="submit" class="${s.is_active ? 'btn-toggle-on' : 'btn-toggle-off'}">
                             ${s.is_active ? 'Tắt' : 'Bật'}
                         </button>
                     </form>
-                    <form action="/crawl-sources/${s.id}" method="POST"
-                        onsubmit="return confirm('Xóa nguồn này?')">
-                        <input type="hidden" name="_token" value="${document.querySelector('meta[name=csrf-token]')?.content || ''}">
+                    <form action="/crawl-sources/${s.id}" method="POST" onsubmit="return confirm('Xóa nguồn này?')">
+                        <input type="hidden" name="_token" value="${token}">
                         <input type="hidden" name="_method" value="DELETE">
                         <button type="submit" class="btn-delete">Xóa</button>
                     </form>
@@ -512,24 +444,33 @@
         try {
             const res  = await fetch('/crawl-sources/data');
             const json = await res.json();
-
             if (json.hash !== lastHash) {
                 lastHash = json.hash;
-
                 const tbody = document.getElementById('sources-tbody');
-
-                if (json.sources.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">Chưa có nguồn nào.</td></tr>`;
-                } else {
-                    tbody.innerHTML = json.sources.map(renderRow).join('');
-                }
+                tbody.innerHTML = json.sources.length === 0
+                    ? `<tr><td colspan="8" style="text-align:center;color:#aaa;padding:30px;">Chưa có nguồn nào.</td></tr>`
+                    : json.sources.map(renderRow).join('');
             }
-
         } catch (e) {}
     }
 
-    // Poll mỗi 30 giây
     setInterval(pollSources, 30000);
+
+    // ========================
+    // CONVERT UTC+7 → UTC TRƯỚC KHI SUBMIT
+    // ========================
+    document.getElementById('crawl-form').addEventListener('submit', function() {
+        convertToUTC('#input-run-at');
+        convertToUTC('#expires-interval');
+        convertToUTC('#expires-daily');
+    });
+
+    function convertToUTC(selector) {
+        const input = document.querySelector(selector);
+        if (!input || !input.value || input.disabled) return;
+        const local = new Date(input.value);
+        input.value = local.toISOString().slice(0, 16);
+    }
 
     // ========================
     // FORM LOGIC
@@ -543,8 +484,15 @@
     }
 
     function toggleExpires(type, value) {
-        const id = type === 'interval' ? 'expires-interval' : 'expires-daily';
-        document.getElementById(id).style.display = value === 'limited' ? 'block' : 'none';
+        const id    = type === 'interval' ? 'expires-interval' : 'expires-daily';
+        const input = document.getElementById(id);
+        if (value === 'limited') {
+            input.removeAttribute('disabled');
+            input.style.display = 'block';
+        } else {
+            input.setAttribute('disabled', 'disabled');
+            input.style.display = 'none';
+        }
     }
 
     function addTime() {

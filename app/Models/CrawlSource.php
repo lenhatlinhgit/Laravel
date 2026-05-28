@@ -68,42 +68,41 @@ class CrawlSource extends Model
 
     // Chế độ 2 — Khung giờ hàng ngày
     private function isDueDailyTimes(): bool
-    {
-        if (!$this->daily_times) {
-            return false;
-        }
-
-        $times = explode(',', $this->daily_times);
-        $now   = now();
-
-        foreach ($times as $time) {
-
-            $time = trim($time);
-
-            $scheduled = Carbon::createFromFormat(
-                'Y-m-d H:i',
-                $now->format('Y-m-d') . ' ' . $time
-            );
-
-            // Chưa đến giờ hoặc đã qua hơn 1 phút → bỏ qua khung này
-            if ($now->lt($scheduled) || $now->diffInMinutes($scheduled) > 1) {
-                continue;
-            }
-
-            // Đã chạy trong khung giờ này hôm nay rồi → bỏ qua
-            if (
-                $this->last_run_at &&
-                $this->last_run_at->isToday() &&
-                abs($this->last_run_at->diffInMinutes($scheduled)) <= 1
-            ) {
-                continue;
-            }
-
-            return true;
-        }
-
+{
+    if (!$this->daily_times) {
         return false;
     }
+
+    $times = explode(',', $this->daily_times);
+    $now   = now()->setTimezone('Asia/Ho_Chi_Minh'); // so sánh theo giờ VN
+
+    foreach ($times as $time) {
+
+        $time = trim($time);
+
+        $scheduled = Carbon::createFromFormat(
+            'Y-m-d H:i',
+            $now->format('Y-m-d') . ' ' . $time,
+            'Asia/Ho_Chi_Minh' // parse theo giờ VN
+        );
+
+        if ($now->lt($scheduled) || $now->diffInMinutes($scheduled) > 1) {
+            continue;
+        }
+
+        if (
+            $this->last_run_at &&
+            $this->last_run_at->setTimezone('Asia/Ho_Chi_Minh')->isToday() &&
+            abs($this->last_run_at->setTimezone('Asia/Ho_Chi_Minh')->diffInMinutes($scheduled)) <= 1
+        ) {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
 
     // Chế độ 3 — Hẹn 1 lần
     private function isDueOnce(): bool

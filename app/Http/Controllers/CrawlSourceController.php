@@ -71,7 +71,7 @@ class CrawlSourceController extends Controller
         }
 
         if ($request->mode === 'once') {
-            $rules['run_at'] = 'required|date|after:now';
+            $rules['run_at'] = 'required|date';
         }
 
         $request->validate($rules);

@@ -30,7 +30,7 @@ return new class extends Migration
             // Chế độ 3 — Hẹn 1 lần (ngày giờ cụ thể)
             $table->datetime('run_at')->nullable();
 
-            // Chế độ 1 & 2 — Thời hạn (null = vĩnh viễn)
+            // Chế độ 1 & 2 — Thời hạn (null = Vô thời hạn)
             $table->datetime('expires_at')->nullable();
 
             $table->integer('max_posts')->default(5);
